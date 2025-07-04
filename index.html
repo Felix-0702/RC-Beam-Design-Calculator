@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RC Section Design Report Generator (HK CoP 2013) - Revised</title>
+    <style>
+        /* * Professional Engineering Report Stylesheet
+         * - Uses CSS variables for theming.
+         * - Two-column layout for interactive use.
+         * - Single-column, continuous layout for printing.
+         * - Includes specific styles for report headers.
+         */
+        :root {
+            --primary-color: #0d47a1; /* Professional blue */
+            --secondary-color: #f1f5f9; /* Light grey background */
+            --border-color: #cbd5e1; /* Softer grey for borders */
+            --text-color: #1e293b;
+            --header-bg: #e2e8f0;
+            --success-color: #16a34a;
+            --danger-color: #dc2626;
+            --warning-color: #f59e0b;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            margin: 0;
+            background-color: #f8fafc;
+            font-size: 14px; /* Increased base font size for better readability */
+        }
+
+        .page-container {
+            width: 210mm;
+            margin: 20px auto;
+            padding: 15mm;
+            background: white;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+            position: relative;
+        }
+        
+        .main-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            max-width: 1600px;
+            padding: 20px;
+            margin: auto;
+        }
+
+        .inputs-panel {
+            flex: 1;
+            min-width: 350px;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: var(--secondary-color);
+            border: 1px solid var(--border-color);
+            align-self: flex-start;
+        }
+
+        .report-panel {
+            flex: 2.5;
+            min-width: 800px;
+        }
+
+        h1, h2, h3, h4 {
+            color: var(--primary-color);
+            margin-top: 0;
+            font-weight: 600;
+        }
+        
+        h1 {
+            text-align: center;
+            border-bottom: none;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        h2 { 
+            margin-top: 15px; 
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 6px;
+            font-size: 1.2rem; /* Adjusted font size */
+            font-weight: bold;
+        }
+        
+        h3 {
+             margin-top: 10px; 
+             border-bottom: 1px solid #94a3b8;
+             padding-bottom: 4px;
+             font-size: 1.1rem; /* Adjusted font size */
+             font-weight: bold;
+        }
+
+        h4 {
+            font-size: 1rem; /* Adjusted font size */
+            color: #334155;
+            border-bottom: none;
+        }
+        
+        .section-with-diagram {
+             display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+        
+        .input-group.checkbox-group {
+            display: flex;
+            align-items: center;
+        }
+
+        .input-group.checkbox-group input {
+            width: auto;
+            margin-right: 10px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        label .convention {
+            font-weight: normal;
+            font-style: italic;
+            color: #475569;
+            font-size: 0.8rem;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        
+        .rebar-table input, .rebar-table select {
+            padding: 4px;
+            font-size: 0.9rem;
+        }
+
+        .rebar-table td:first-child {
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+            min-height: 80px;
+            resize: vertical;
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            font-size: 14px; /* Adjusted font size */
+            line-height: 1.6;
+            color: var(--text-color);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button.ai-button, button.layer-button {
+             background-color: var(--warning-color);
+             font-size: 14px;
+             padding: 8px;
+             margin-top: 4px;
+        }
+        
+        .ai-button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        button.remove-layer-btn {
+            background-color: var(--danger-color);
+            width: auto;
+            padding: 5px 10px;
+            font-size: 12px;
+            margin-top: 0;
+            border-radius: 50%;
+            line-height: 1;
+        }
+        
+        #print-btn {
+            background-color: var(--success-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 14px; /* Adjusted font size */
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 6px 8px;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: var(--header-bg);
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        .formula {
+            font-style: italic;
+            color: #475569;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 0.9em;
+        }
+
+        .citation {
+            font-size: 0.8em;
+            color: #0ea5e9;
+            font-weight: bold;
+            margin-left: 10px;
+            font-style: italic;
+        }
+
+        .design-summary-container {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        
+        .summary-card-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .summary-card {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px 15px;
+            height: 100%;
+            box-sizing: border-box;
+        }
+        .summary-card p {
+            margin: 6px 0;
+        }
+
+        .final-rebar { font-weight: bold; color: #c2410c; }
+        .check-ok { color: var(--success-color); font-weight: bold; }
+        .check-fail { color: var(--danger-color); font-weight: bold; }
+
+        .beam-sketch { text-align: center; max-width: 350px; margin: auto; }
+        .beam-sketch svg {
+            border: 1px solid var(--border-color);
+            width: 100%;
+            height: auto;
+            background-color: #fff;
+        }
+        .beam-sketch h3 {
+            font-size: 14px;
+            margin-top: 10px;
+            border: none;
+            color: var(--text-color);
+        }
+        
+        /* Report Header Styles */
+        .report-header {
+            display: grid;
+            grid-template-columns: 1.2fr 4fr; /* Logo | Right Side */
+            border: 2px solid black;
+            margin-bottom: 15px;
+        }
+        .report-header .logo-container {
+            border-right: 2px solid black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px;
+            min-height: 80px;
+        }
+        .report-header .logo-container img {
+            max-width: 120px;
+            max-height: 80px;
+            object-fit: contain;
+        }
+        .report-header .right-content {
+             display: grid;
+             grid-template-rows: 1fr 1fr;
+        }
+        .report-header .title-container {
+            border-bottom: 2px solid black;
+            text-align: center;
+            padding: 5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+         .report-header .title-container h2 {
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            padding: 0;
+            margin: 0;
+        }
+         .report-header .title-container h3 {
+             font-size: 16px;
+             font-weight: bold;
+             border: none;
+             padding: 0;
+             margin: 0;
+        }
+        .report-header .info-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+        }
+        .report-header .info-cell {
+            padding: 5px 10px;
+            border-left: 2px solid black;
+            font-size: 12px;
+        }
+        .report-header .info-cell:first-child {
+            border-left: none;
+        }
+        .report-header .info-cell p {
+            margin: 2px 0;
+        }
+        .report-header .info-cell span {
+            font-weight: bold;
+        }
+
+        #recommendation-section {
+            display: none; /* Initially hidden */
+            margin-top: 20px;
+            padding: 15px;
+            border: 2px dashed var(--warning-color);
+            background-color: #fefce8;
+            border-radius: 8px;
+        }
+         #recommendation-section h2 {
+             color: var(--warning-color);
+             border-bottom-color: var(--warning-color);
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .version-notes {
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 0.8rem;
+            color: #01579b; /* Darker blue text */
+            background-color: #e3f2fd; /* Light blue background */
+            border-radius: 4px;
+            border: 1px solid #90caf9; /* Softer blue border */
+        }
+
+        /* Print-specific styles */
+        @media print {
+            body { background-color: #fff; }
+            .main-container { display: block; padding: 0; }
+            .inputs-panel { display: none; }
+            .report-panel { width: 100%; }
+            .page-container {
+                box-shadow: none;
+                border: none;
+                margin: 0;
+                padding: 0;
+            }
+            h2, h3 { page-break-after: avoid; }
+            table, .design-summary-container, .section-with-diagram { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="inputs-panel">
+            <h1>RC Section Design Inputs (v5.5)</h1>
+
+            <h2>ULS Loading Input (Factored)</h2>
+            <div class="input-group">
+                <label for="axialLoad">Axial Load, N (kN) <span class="convention">(+ for comp, - for tension)</span></label>
+                <input type="number" id="axialLoad" value="0">
+            </div>
+            <div class="input-group">
+                <label for="shearForceY">Shear, V<sub>y</sub> (Major Axis, kN)</label>
+                <input type="number" id="shearForceY" value="95.5">
+            </div>
+             <div class="input-group">
+                <label for="shearForceX">Shear, V<sub>x</sub> (Minor Axis, kN)</label>
+                <input type="number" id="shearForceX" value="0">
+            </div>
+            <div class="input-group">
+                <label for="bendingMoment">Bending Moment, M (kNm) <span class="convention">(+ for hogging, - for sagging)</span></label>
+                <input type="number" id="bendingMoment" value="119.4">
+            </div>
+            <div class="input-group">
+                <label for="torsionMoment">Torsion, T (kNm)</label>
+                <input type="number" id="torsionMoment" value="0">
+            </div>
+
+            <h2>SLS Loading Input (Unfactored)</h2>
+             <div class="input-group">
+                <label for="bendingMoment_sls">Bending Moment, M<sub>sls</sub> (kNm) <span class="convention">(+ for hogging, - for sagging)</span></label>
+                <input type="number" id="bendingMoment_sls" value="80">
+            </div>
+            
+            <h2>Material Properties</h2>
+            <div class="input-group">
+                <label for="fcu">Concrete Grade, fcu (N/mm²)</label>
+                <select id="fcu"><option value="35" selected>C35/45</option><option value="20">C20/25</option><option value="25">C25/30</option><option value="30">C30/37</option><option value="40">C40/50</option><option value="45">C45/55</option><option value="50">C50/60</option></select>
+            </div>
+            <div class="input-group">
+                <label for="fy">Rebar Grade, fy (N/mm²)</label>
+                <select id="fy"><option value="500">500B</option><option value="250">250</option></select>
+            </div>
+            
+            <h2>Preliminary Design & Detailing</h2>
+             <div class="input-group">
+                <label for="supportCondition">Support Condition</label>
+                <select id="supportCondition">
+                    <option value="simply-supported" selected>Simply Supported</option>
+                    <option value="continuous">Continuous</option>
+                    <option value="cantilever">Cantilever</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="span">Span Length (m) <span class="convention">(for deflection check)</span></label>
+                <input type="number" id="span" value="5">
+            </div>
+             <div class="input-group">
+                <label for="b">Beam Width, b (mm)</label>
+                <input type="number" id="b" value="250">
+            </div>
+            <div class="input-group">
+                <label for="h">Beam Height, h (mm)</label>
+                <input type="number" id="h" value="450">
+            </div>
+             <div class="input-group">
+                <label for="c_nom">Nominal Cover, c<sub>nom</sub> (mm)</label>
+                <input type="number" id="c_nom" value="35">
+            </div>
+
+            <div class="input-group">
+                <label>Top Reinforcement</label>
+                <table class="rebar-table">
+                    <thead><tr><th>Layer</th><th>No.</th><th>Dia.</th><th>Spacing (mm)</th><th></th></tr></thead>
+                    <tbody id="top-layers-container"></tbody>
+                </table>
+                <button class="layer-button" type="button" onclick="addLayer('top')">Add Top Layer</button>
+            </div>
+            <div class="input-group">
+                <label>Bottom Reinforcement</label>
+                 <table class="rebar-table">
+                     <thead><tr><th>Layer</th><th>No.</th><th>Dia.</th><th>Spacing (mm)</th><th></th></tr></thead>
+                    <tbody id="bottom-layers-container"></tbody>
+                </table>
+                <button class="layer-button" type="button" onclick="addLayer('bottom')">Add Bottom Layer</button>
+            </div>
+             <div class="input-group">
+                <label for="aggSize">Nominal Max Aggregate Size (mm)</label>
+                <input type="number" id="aggSize" value="20">
+                 <small class="convention">Note: Min clear spacing between layers &ge; max(bar dia, h<sub>agg</sub>+5, 20mm) [Cl. 8.2]</small>
+            </div>
+            <div class="input-group">
+                <label for="linkDia">Shear Link Diameter (mm)</label>
+                 <select id="linkDia"><option value="8">8</option><option value="10" selected>10</option><option value="12">12</option><option value="16">16</option><option value="25">25</option><option value="32">32</option><option value="40">40</option></select>
+            </div>
+            <div class="input-group">
+                <label for="numLinkLegs">Number of Shear Link Legs</label>
+                <input type="number" id="numLinkLegs" value="2">
+            </div>
+            <div class="input-group">
+                <label for="linkSpacing">Shear Link Spacing (mm)</label>
+                <input type="number" id="linkSpacing" value="200">
+            </div>
+             <div class="input-group">
+                <label for="restraintFactor">Restraint Factor, R <span class="convention">(for thermal crack)</span></label>
+                <input type="number" id="restraintFactor" value="0.5">
+            </div>
+             <div class="input-group">
+                <label for="tempDrop">Temperature Drop, T1 (°C) <span class="convention">(for thermal crack)</span></label>
+                <input type="number" id="tempDrop" value="30">
+            </div>
+
+            <div id="recommendation-section">
+                <h2>Design Recommendation</h2>
+                <p>The preliminary section fails one or more design checks.</p>
+                <div id="recommendation-output"></div>
+                <button id="ai-recommend-btn" class="ai-button" onclick="generateAIRecommendation()">✨ Ask AI for Suggestion</button>
+            </div>
+            
+            <h2>Report Details</h2>
+             <div class="input-group"><label for="designerName">Designer</label><input type="text" id="designerName" value="C.E."></div>
+             <div class="input-group"><label for="checkedBy">Checked By</label><input type="text" id="checkedBy" value="S.E."></div>
+             <div class="input-group"><label for="projectTitle">Project Title</label><input type="text" id="projectTitle" value="Example Project"></div>
+             <div class="input-group"><label for="projectSubTitle">Sub-title</label><input type="text" id="projectSubTitle" value="RC Beam Section Design"></div>
+             <div class="input-group"><label for="reportDate">Date</label><input type="date" id="reportDate"></div>
+             <div class="input-group"><label for="reportRevision">Revision</label><input type="text" id="reportRevision" value="A"></div>
+             <div class="input-group"><label for="companyLogo">Company Logo</label><input type="file" id="companyLogo" accept="image/*"></div>
+             <div class="input-group checkbox-group">
+                <input type="checkbox" id="includeOverview" checked>
+                <label for="includeOverview">Include Overview Section</label>
+             </div>
+            
+            <button id="calc-btn" onclick="calculate()">Verify Design</button>
+            <button id="print-btn" onclick="window.print()">Print to PDF</button>
+            
+            <div class="version-notes">
+                <strong>Notes on V5.5 Update:</strong>
+                <ul>
+                    <li>Added input for number of shear link legs for more accurate shear design.</li>
+                    <li>Added an option to include or exclude the Overview section.</li>
+                    <li>SLS moment input is now a single field, using sign convention.</li>
+                    <li>Fixed diagram scaling and annotation issues for clarity.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="report-panel" id="output-section"></div>
+    </div>
+    
+    <!-- IMPORTANT NOTE FOR LOCAL USE:
+         To enable the AI features ("Generate Overview" and "AI Suggestion") when running this file 
+         locally on your computer, you must obtain a free Gemini API key from Google AI Studio 
+         (https://aistudio.google.com/app/apikey) and insert it into the script below.
+    -->
+    <script>
+        // --- Global Variables ---
+        document.getElementById('reportDate').valueAsDate = new Date();
+        const barData = { 6: 28.3, 8: 50.3, 10: 78.5, 12: 113.1, 16: 201.1, 20: 314.2, 25: 490.9, 32: 804.3, 40: 1256.6, 50: 1963.5 };
+        let lastCalculation = {}; // To store the latest results for AI functions
+        
+        // --- UI & Helper Functions ---
+        
+        function generateRebarSVG(bottomBars, topBars, inputs, cover, padding, linkDia) {
+            const svgWidth = 500;
+            const svgHeight = 600;
+            const textPadding = 60; // Increased padding for text
+            const scale = Math.min((svgWidth - 2 * textPadding) / inputs.b, (svgHeight - 2 * textPadding) / inputs.h);
+            
+            const beamWidth = inputs.b * scale;
+            const beamHeight = inputs.h * scale;
+            const xOffset = textPadding + (svgWidth - 2 * textPadding - beamWidth) / 2;
+            const yOffset = textPadding + (svgHeight - 2 * textPadding - beamHeight) / 2;
+
+            let svgString = `<svg viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto;">`;
+            svgString += `<defs><marker id="axis-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#333" /></marker></defs>`;
+            
+            // Draw Beam and Link
+            svgString += `<rect x="${xOffset}" y="${yOffset}" width="${beamWidth}" height="${beamHeight}" fill="#f0f0f0" stroke="#333" stroke-width="2"/>`;
+            svgString += `<rect x="${xOffset + cover*scale}" y="${yOffset + cover*scale}" width="${beamWidth - 2*cover*scale}" height="${beamHeight - 2*cover*scale}" fill="none" stroke="#d9534f" stroke-width="2" rx="${linkDia*scale}" ry="${linkDia*scale}"/>`;
+            
+            // Draw Bottom Bars
+            bottomBars.layers.forEach((layer) => {
+                const layerWidth = beamWidth - (2 * cover * scale) - (2 * linkDia * scale) - (layer.dia * scale);
+                const spacing = layer.num > 1 ? layerWidth / (layer.num - 1) : 0;
+                for (let i = 0; i < layer.num; i++) {
+                    const cx = xOffset + cover*scale + linkDia*scale + (layer.dia*scale / 2) + (i * spacing);
+                    const cy = yOffset + beamHeight - (layer.depthFromBottom * scale);
+                    svgString += `<circle cx="${cx}" cy="${cy}" r="${layer.dia * scale / 2}" fill="#333" />`;
+                }
+            });
+
+            // Draw Top Bars
+            topBars.layers.forEach((layer) => {
+                const layerWidth = beamWidth - (2 * cover * scale) - (2 * linkDia * scale) - (layer.dia * scale);
+                const spacing = layer.num > 1 ? layerWidth / (layer.num - 1) : 0;
+                for (let i = 0; i < layer.num; i++) {
+                    const cx = xOffset + cover*scale + linkDia*scale + (layer.dia*scale / 2) + (i * spacing);
+                    const cy = yOffset + layer.depth * scale;
+                    svgString += `<circle cx="${cx}" cy="${cy}" r="${layer.dia * scale / 2}" fill="#666" />`;
+                }
+            });
+
+            const midX_viewbox = svgWidth / 2;
+            const midY_viewbox = svgHeight / 2;
+            // Coordinate Axes (Fixed size and position)
+            svgString += `<line x1="${midX_viewbox}" y1="${midY_viewbox + 60}" x2="${midX_viewbox}" y2="${midY_viewbox - 60}" stroke="#0d47a1" stroke-width="1.5" marker-end="url(#axis-arrow)" /><text x="${midX_viewbox + 8}" y="${midY_viewbox - 65}" font-size="24" fill="#0d47a1" font-weight="bold">Y</text>`;
+            svgString += `<line x1="${midX_viewbox - 60}" y1="${midY_viewbox}" x2="${midX_viewbox + 60}" y2="${midY_viewbox}" stroke="#0d47a1" stroke-width="1.5" marker-end="url(#axis-arrow)" /><text x="${midX_viewbox + 68}" y="${midY_viewbox + 5}" font-size="24" fill="#0d47a1" font-weight="bold">X</text>`;
+            
+            // Dimension Lines (Fixed position and size)
+            svgString += `<line x1="${xOffset}" y1="30" x2="${xOffset + beamWidth}" y2="30" stroke="#333" stroke-width="1.5" marker-start="url(#axis-arrow)" marker-end="url(#axis-arrow)"/><text x="${xOffset + beamWidth / 2}" y="20" text-anchor="middle" font-size="24" font-family="monospace">b = ${inputs.b}</text>`;
+            svgString += `<line x1="30" y1="${yOffset}" x2="30" y2="${yOffset + beamHeight}" stroke="#333" stroke-width="1.5" marker-start="url(#axis-arrow)" marker-end="url(#axis-arrow)"/><text x="20" y="${yOffset + beamHeight / 2}" text-anchor="middle" transform="rotate(-90, 20, ${yOffset + beamHeight/2})" font-size="24" font-family="monospace">h = ${inputs.h}</text>`;
+            
+            svgString += `</svg>`;
+            return svgString;
+        }
+
+        function generateLoadingDiagramSVG() {
+            const svgWidth = 300;
+            const svgHeight = 350;
+            const midX = svgWidth / 2;
+            const midY = svgHeight / 2 + 30;
+
+            // Use fixed dimensions for the beam representation
+            const beamWidth = 100;
+            const beamHeight = 150;
+            const perspective = 30;
+
+            const frontX = midX - beamWidth / 2;
+            const frontY = midY - beamHeight / 2;
+
+            const axisColor = "#0d47a1";
+            const loadColor = "#c2410c";
+            const beamStroke = "#333";
+            const beamFill = "#f0f0f0";
+
+            let svgString = `<svg viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto;">`;
+            
+            svgString += `<defs>
+                            <marker id="load-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="${loadColor}" /></marker>
+                            <marker id="axis-arrow-svg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="${axisColor}" /></marker>
+                         </defs>`;
+
+            svgString += `<g stroke="${beamStroke}" stroke-width="2" fill="${beamFill}">
+                    <polygon points="${frontX},${frontY} ${frontX + perspective},${frontY - perspective} ${frontX + beamWidth + perspective},${frontY - perspective} ${frontX + beamWidth},${frontY}" />
+                    <polygon points="${frontX + beamWidth},${frontY} ${frontX + beamWidth + perspective},${frontY - perspective} ${frontX + beamWidth + perspective},${frontY + beamHeight - perspective} ${frontX + beamWidth},${frontY + beamHeight}" />
+                    <rect x="${frontX}" y="${frontY}" width="${beamWidth}" height="${beamHeight}" fill="${beamFill}" />
+                 </g>`;
+
+            const originX = frontX;
+            const originY = frontY + beamHeight;
+            svgString += `<g stroke-width="1.5" marker-end="url(#axis-arrow-svg)">
+                    <line x1="${originX}" y1="${originY}" x2="${originX + 80}" y2="${originY}" stroke="${axisColor}" /><text x="${originX + 85}" y="${originY + 5}" fill="${axisColor}" font-weight="bold">X</text>
+                    <line x1="${originX}" y1="${originY}" x2="${originX}" y2="${originY - 80}" stroke="${axisColor}" /><text x="${originX - 15}" y="${originY - 80}" fill="${axisColor}" font-weight="bold">Y</text>
+                    <line x1="${originX}" y1="${originY}" x2="${originX - 40}" y2="${originY + 40}" stroke="${axisColor}" /><text x="${originX - 50}" y="${originY + 50}" fill="${axisColor}" font-weight="bold">Z</text>
+                 </g>`;
+            
+            const beamMidX = frontX + beamWidth / 2;
+            const beamMidY = frontY + beamHeight / 2;
+
+            svgString += `<line x1="${beamMidX - 40}" y1="${beamMidY + 40}" x2="${beamMidX}" y2="${beamMidY}" stroke="${loadColor}" stroke-width="2" marker-start="url(#load-arrow)"/><text x="${beamMidX - 55}" y="${beamMidY + 55}" font-size="14" fill="${loadColor}" font-weight="bold">N</text>`;
+            svgString += `<line x1="${frontX + beamWidth + 20}" y1="${beamMidY + 30}" x2="${frontX + beamWidth + 20}" y2="${beamMidY}" stroke="${loadColor}" stroke-width="2" marker-end="url(#load-arrow)"/><text x="${frontX + beamWidth + 25}" y="${beamMidY + 15}" font-size="14" fill="${loadColor}" font-weight="bold">V_y</text>`;
+            svgString += `<line x1="${beamMidX - 30}" y1="${frontY - 20}" x2="${beamMidX}" y2="${frontY - 20}" stroke="${loadColor}" stroke-width="2" marker-start="url(#load-arrow)"/><text x="${beamMidX - 15}" y="${frontY - 25}" text-anchor="end" font-size="14" fill="${loadColor}" font-weight="bold">V_x</text>`;
+            svgString += `<path d="M ${beamMidX - 50} ${originY} A 20 20 0 1 0 ${beamMidX - 35} ${originY - 15}" fill="none" stroke="${loadColor}" stroke-width="2" marker-start="url(#load-arrow)" /><text x="${beamMidX - 75}" y="${originY + 10}" font-size="14" fill="${loadColor}" font-weight="bold">M</text>`;
+            svgString += `<path d="M ${beamMidX - 25} ${beamMidY - 35} A 25 25 0 1 1 ${beamMidX + 25} ${beamMidY - 35}" fill="none" stroke="${loadColor}" stroke-width="2" stroke-dasharray="4,4" marker-start="url(#load-arrow)"/><text x="${beamMidX + 30}" y="${beamMidY - 40}" font-size="14" fill="${loadColor}" font-weight="bold">T</text>`;
+
+            svgString += `</svg>`;
+            return svgString;
+        }
+
+        function addLayer(type) {
+            const container = document.getElementById(`${type}-layers-container`);
+            const newRow = container.insertRow();
+            const layerNum = container.rows.length;
+
+            newRow.innerHTML = `
+                <td>${layerNum}</td>
+                <td><input type="number" class="num-bars" value="${layerNum === 1 ? (type === 'top' ? 2 : 3) : 2}"></td>
+                <td><select class="bar-dia">
+                        <option value="8">8</option><option value="10">10</option><option value="12">12</option><option value="16" ${layerNum === 1 && type==='top' ? 'selected' : ''}>16</option><option value="20">20</option><option value="25" ${layerNum === 1 && type==='bottom' ? 'selected' : ''}>25</option><option value="32">32</option><option value="40">40</option><option value="50">50</option>
+                    </select></td>
+                <td>${layerNum > 1 ? '<input type="number" class="clear-spacing" value="25">' : 'N/A'}</td>
+                <td><button type="button" class="remove-layer-btn">X</button></td>
+            `;
+        }
+
+        function removeLayer(buttonElement) {
+            const row = buttonElement.closest('tr');
+            const tableBody = row.parentElement;
+            row.remove();
+            // Re-number remaining rows
+            Array.from(tableBody.rows).forEach((r, i) => {
+                r.cells[0].textContent = i + 1;
+                if (i === 0) { // First layer
+                    const spacingCell = r.cells[3];
+                    if (spacingCell.querySelector('input')) {
+                       spacingCell.innerHTML = 'N/A';
+                    }
+                }
+            });
+            calculate();
+        }
+
+
+        // --- Core Calculation & Report Generation ---
+        
+        function runDesignChecks(calcInputs, rebarInputs) {
+            const isHogging = calcInputs.M >= 0;
+            const c_nom = calcInputs.c_nom;
+            
+            let totalTensionArea = 0;
+            let momentOfTensionArea = 0;
+            const tensionLayers = isHogging ? rebarInputs.topLayers : rebarInputs.bottomLayers;
+            
+            if (tensionLayers.length === 0) {
+                 return { pass: false, reason: 'No tension reinforcement provided.' };
+            }
+
+            let currentDepth = c_nom + calcInputs.linkDia;
+            tensionLayers.forEach((layer, index) => {
+                 if(index > 0) {
+                    const prevLayer = tensionLayers[index-1];
+                    // Ensure spacing is valid
+                    const spacing = Math.max(layer.spacing, prevLayer.dia, calcInputs.aggSize + 5, 20);
+                    currentDepth += prevLayer.dia / 2 + spacing + layer.dia / 2;
+                } else {
+                    currentDepth += layer.dia / 2;
+                }
+                layer.depth = currentDepth;
+                totalTensionArea += layer.area;
+                momentOfTensionArea += layer.area * layer.depth;
+            });
+            
+            const d_tension_centroid = totalTensionArea > 0 ? momentOfTensionArea / totalTensionArea : 0;
+            const d_y = calcInputs.h - d_tension_centroid;
+
+            if (d_y <= 0) return { pass: false, reason: 'Invalid effective depth. Check beam height and reinforcement cover.' };
+
+            const M_abs = Math.abs(calcInputs.M);
+            const M_eff = M_abs + calcInputs.N * (calcInputs.h/2 - d_tension_centroid);
+            
+            if (M_eff < 0) return { pass: false, reason: 'Axial load causes moment reversal. Check inputs.' };
+            
+            const K = M_eff * 1e6 / (calcInputs.b * d_y**2 * calcInputs.fcu);
+            const K_prime = (calcInputs.fcu <= 45) ? 0.156 : ((calcInputs.fcu <= 70) ? 0.120 : 0.094);
+            if (K > K_prime) return { pass: false, reason: `Flexure Failure (K = ${K.toFixed(3)} > K' = ${K_prime.toFixed(3)})` };
+            
+            const z = Math.min(d_y * (0.5 + Math.sqrt(0.25 - K / 0.9)), 0.95 * d_y);
+            const As_req = M_eff * 1e6 / (0.87 * calcInputs.fy * z);
+            
+            const vy = calcInputs.Vy * 1e3 / (calcInputs.b * d_y);
+            const v_max_limit = Math.min(0.8 * Math.sqrt(calcInputs.fcu), 7.0);
+            if (vy > v_max_limit) return { pass: false, reason: `Shear Failure (v = ${vy.toFixed(2)} > vmax = ${v_max_limit.toFixed(2)})` };
+            
+            let basic_ratio;
+            switch(calcInputs.supportCondition) {
+                case 'cantilever': basic_ratio = 7; break;
+                case 'continuous': basic_ratio = 26; break;
+                default: basic_ratio = 20;
+            }
+            const fs_deflection = (totalTensionArea > 0) ? (2/3) * calcInputs.fy * (As_req / totalTensionArea) : 0;
+            const mod_factor_tension = (M_abs > 0) ? Math.min(2.0, 0.55 + (477 - fs_deflection) / (120 * (0.9 + (M_abs * 1e6) / (calcInputs.b * d_y**2)))) : 2.0;
+            const allowable_ratio = basic_ratio * mod_factor_tension;
+            const actual_ratio = calcInputs.span * 1000 / d_y;
+            if (actual_ratio > allowable_ratio) return { pass: false, reason: `Deflection Failure (Actual/Allowable = ${(actual_ratio / allowable_ratio).toFixed(2)})`};
+            
+            return { pass: true, h: calcInputs.h, b: calcInputs.b, As_req, failureReason: null };
+        }
+        
+        // --- Main Calculation Orchestrator ---
+        function calculate() {
+            // Read rebar layers first
+            const topLayers = [], bottomLayers = [];
+            
+            document.querySelectorAll('#top-layers-container tr').forEach((row) => {
+                const numInput = row.querySelector('.num-bars');
+                const diaSelect = row.querySelector('.bar-dia');
+                const spacingInput = row.querySelector('.clear-spacing');
+                if (numInput && diaSelect) {
+                    const num = parseInt(numInput.value) || 0;
+                    const dia = parseFloat(diaSelect.value) || 0;
+                    const spacing = spacingInput ? (parseFloat(spacingInput.value) || 25) : 25;
+                    if(num > 0 && dia > 0) {
+                        topLayers.push({ num, dia, area: num * barData[dia], spacing });
+                    }
+                }
+            });
+            document.querySelectorAll('#bottom-layers-container tr').forEach((row) => {
+                const numInput = row.querySelector('.num-bars');
+                const diaSelect = row.querySelector('.bar-dia');
+                const spacingInput = row.querySelector('.clear-spacing');
+                if (numInput && diaSelect) {
+                    const num = parseInt(numInput.value) || 0;
+                    const dia = parseFloat(diaSelect.value) || 0;
+                    const spacing = spacingInput ? (parseFloat(spacingInput.value) || 25) : 25;
+                    if(num > 0 && dia > 0) {
+                        bottomLayers.push({ num, dia, area: num * barData[dia], spacing });
+                    }
+                }
+            });
+            
+            const rebarInputs = { topLayers, bottomLayers };
+
+            const supportConditionEl = document.getElementById('supportCondition');
+            const inputs = {
+                // ULS Loads
+                N: parseFloat(document.getElementById('axialLoad')?.value || 0), 
+                Vy: parseFloat(document.getElementById('shearForceY')?.value || 0),
+                Vx: parseFloat(document.getElementById('shearForceX')?.value || 0), 
+                M: parseFloat(document.getElementById('bendingMoment')?.value || 0),
+                T: parseFloat(document.getElementById('torsionMoment')?.value || 0),
+                // SLS Loads
+                M_sls: parseFloat(document.getElementById('bendingMoment_sls')?.value || 0),
+                // Properties
+                fcu: parseFloat(document.getElementById('fcu')?.value || 35),
+                fy: parseFloat(document.getElementById('fy')?.value || 500), 
+                b: parseFloat(document.getElementById('b')?.value || 0),
+                h: parseFloat(document.getElementById('h')?.value || 0), 
+                span: parseFloat(document.getElementById('span')?.value || 0),
+                c_nom: parseFloat(document.getElementById('c_nom')?.value || 35),
+                linkDia: parseFloat(document.getElementById('linkDia')?.value || 10),
+                numLinkLegs: parseInt(document.getElementById('numLinkLegs')?.value || 2),
+                linkSpacing: parseFloat(document.getElementById('linkSpacing')?.value || 200),
+                aggSize: parseFloat(document.getElementById('aggSize')?.value || 20),
+                R: parseFloat(document.getElementById('restraintFactor')?.value || 0), 
+                T1: parseFloat(document.getElementById('tempDrop')?.value || 0),
+                supportCondition: supportConditionEl ? supportConditionEl.value : 'simply-supported',
+                includeOverview: document.getElementById('includeOverview').checked
+            };
+            
+            const designCheckResult = runDesignChecks({...inputs}, JSON.parse(JSON.stringify(rebarInputs)));
+            const overall_pass = designCheckResult.pass;
+            
+            const isHogging = inputs.M >= 0;
+            const c_nom = inputs.c_nom;
+            
+            // Calculate centroids and total areas
+            let totalTopArea = 0, momentOfTopArea = 0, numTopBars = 0;
+            let currentTopDepth = c_nom + inputs.linkDia;
+            topLayers.forEach((layer, index) => {
+                if(index > 0) {
+                    const prevLayer = topLayers[index-1];
+                    const spacing = Math.max(layer.spacing, prevLayer.dia, inputs.aggSize + 5, 20);
+                    currentTopDepth += prevLayer.dia / 2 + spacing + layer.dia / 2;
+                } else {
+                    currentTopDepth += layer.dia / 2;
+                }
+                layer.depth = currentTopDepth;
+                totalTopArea += layer.area;
+                momentOfTopArea += layer.area * layer.depth;
+                numTopBars += layer.num;
+            });
+
+            let totalBottomArea = 0, momentOfBottomArea = 0, numBottomBars = 0;
+            let currentBottomDepth = c_nom + inputs.linkDia;
+             bottomLayers.forEach((layer, index) => {
+                if(index > 0) {
+                    const prevLayer = bottomLayers[index-1];
+                    const spacing = Math.max(layer.spacing, prevLayer.dia, inputs.aggSize + 5, 20);
+                    currentBottomDepth += prevLayer.dia / 2 + spacing + layer.dia / 2;
+                } else {
+                    currentBottomDepth += layer.dia / 2;
+                }
+                layer.depthFromBottom = currentBottomDepth;
+                totalBottomArea += layer.area;
+                momentOfBottomArea += layer.area * layer.depthFromBottom;
+                numBottomBars += layer.num;
+            });
+            
+            const d_top_centroid = totalTopArea > 0 ? momentOfTopArea / totalTopArea : 0;
+            const d_bottom_centroid_from_bottom = totalBottomArea > 0 ? momentOfBottomArea / totalBottomArea : 0;
+            
+            const d_y = isHogging ? (inputs.h - d_top_centroid) : (inputs.h - d_bottom_centroid_from_bottom);
+            const d_prime = isHogging ? d_bottom_centroid_from_bottom : d_top_centroid;
+
+            const topBars = { num: numTopBars, dia: topLayers[0]?.dia || 0, area: totalTopArea, layers: topLayers };
+            const bottomBars = { num: numBottomBars, dia: bottomLayers[0]?.dia || 0, area: totalBottomArea, layers: bottomLayers };
+            const tensionRebar = isHogging ? topBars : bottomBars;
+            const compressionRebar = isHogging ? bottomBars : topBars;
+            const As_prov = tensionRebar.area;
+            const As_prime_prov = compressionRebar.area;
+            
+            const d_x = inputs.b - c_nom - inputs.linkDia - 16 / 2; // Assuming a 16mm bar for minor axis
+            const M_abs = Math.abs(inputs.M);
+            
+            const d_tension_centroid_from_top = isHogging ? d_top_centroid : (inputs.h - d_bottom_centroid_from_bottom);
+            const M_eff = M_abs - inputs.N * (inputs.h/2 - d_tension_centroid_from_top);
+            
+            let K = M_eff > 0 ? M_eff * 1e6 / (inputs.b * d_y**2 * inputs.fcu) : 0;
+            const K_prime = (inputs.fcu <= 45) ? 0.156 : ((inputs.fcu <= 70) ? 0.120 : 0.094);
+
+            let flexuralCalcs = {};
+             if (K <= K_prime && M_eff > 0) {
+                const z = Math.min(d_y * (0.5 + Math.sqrt(0.25 - K / 0.9)), 0.95 * d_y);
+                const As_req = M_eff * 1e6 / (0.87 * inputs.fy * z);
+                const x = (d_y - z) / 0.45;
+                flexuralCalcs = { isDoubly: false, As_req, As_prime_req: 0, K, K_prime, z, x };
+            } else if (M_eff > 0) {
+                const z = d_y * (0.5 + Math.sqrt(0.25 - K_prime / 0.9));
+                const As_prime_req = (M_eff * 1e6 - K_prime * inputs.fcu * inputs.b * d_y**2) / (0.87 * inputs.fy * (d_y - d_prime));
+                const As_req = (K_prime * inputs.fcu * inputs.b * d_y**2) / (0.87 * inputs.fy * z) + As_prime_req;
+                const x = (d_y - z) / 0.45;
+                flexuralCalcs = { isDoubly: true, As_req, As_prime_req, K, K_prime, z, x };
+            } else { // No effective moment or moment reversal
+                flexuralCalcs = { isDoubly: false, As_req: 0, As_prime_req: 0, K:0, K_prime, z:0, x:0 };
+            }
+            
+            const v_max_limit = Math.min(0.8 * Math.sqrt(inputs.fcu), 7.0);
+            const vc_multiplier = (inputs.fcu > 25) ? Math.pow(inputs.fcu / 25, 1/3) : 1.0;
+            const rho_l = As_prov > 0 ? Math.min(As_prov / (inputs.b * d_y), 0.03) : 0; // rho_l should not be taken > 3%
+            
+            let vcy_base = (rho_l > 0) ? (0.79 * Math.pow(rho_l * 100, 1/3) * Math.pow(400/d_y, 1/4) / 1.25) * vc_multiplier : 0;
+            if (inputs.N !== 0 && M_abs > 0) {
+                 vcy_base += 0.6 * (inputs.N * 1000 * d_y) / (M_abs * 1e6) * (vy * 1e3 / (inputs.b * d_y));
+            }
+            const vcy = Math.max(vcy_base, 0.4); // vc should not be less than vr
+            const vry = (inputs.fcu <= 40) ? 0.4 : 0.4 * Math.pow(inputs.fcu / 40, 2/3);
+            const vy = inputs.Vy * 1e3 / (inputs.b * d_y);
+            let Asv_y_s_req = (vy < 0.5 * vcy) ? vry * inputs.b / (0.87 * inputs.fy) : (vy - vcy) * inputs.b / (0.87 * inputs.fy);
+            if (vy < (vcy + vry) && vy > 0.5 * vcy) {
+                 Asv_y_s_req = vry * inputs.b / (0.87 * inputs.fy);
+            }
+            const shearCalcsY = { v: vy, vc: vcy, vr: vry, Asv_s_req: Math.max(0, Asv_y_s_req) };
+            
+            const vx = inputs.Vx * 1e3 / (inputs.h * d_x);
+            const vcx = vcy; // simplified assumption for minor axis
+            let Asv_x_s_req = (vx < 0.5 * vcx) ? 0 : (vx - vcx) * inputs.h / (0.87 * inputs.fy);
+            const shearCalcsX = { v: vx, vc: vcx, Asv_s_req: Math.max(0, Asv_x_s_req) };
+            
+            const h_max = Math.max(inputs.b, inputs.h), h_min = Math.min(inputs.b, inputs.h);
+            const vt = (inputs.T > 0) ? (inputs.T * 1e6 * 2) / (h_min**2 * (h_max - h_min/3)) : 0;
+            const vt_min = Math.min(0.067 * Math.sqrt(inputs.fcu), 0.6);
+            const vtu = Math.min(0.8 * Math.sqrt(inputs.fcu), 7.0);
+            let Asv_T_s_req = 0, Asl_req = 0;
+            if (vt > vt_min) {
+                const x1 = inputs.b - 2*c_nom - inputs.linkDia;
+                const y1 = inputs.h - 2*c_nom - inputs.linkDia;
+                Asv_T_s_req = (inputs.T * 1e6) / (0.8 * x1 * y1 * (0.87 * inputs.fy));
+                Asl_req = (inputs.T * 1e6 * (x1 + y1)) / (0.8 * x1 * y1 * (0.87 * inputs.fy));
+            }
+            const torsionalCalcs = { vt, vt_min, vtu, Asv_T_s_req, Asl_req };
+            const combined_Asv_s_req = shearCalcsY.Asv_s_req + shearCalcsX.Asv_s_req + torsionalCalcs.Asv_T_s_req;
+            const Asv_s_prov = (inputs.numLinkLegs * barData[inputs.linkDia]) / inputs.linkSpacing;
+
+            // --- SLS Checks ---
+            // Deflection Check
+            let basic_ratio;
+            switch(inputs.supportCondition) {
+                case 'cantilever': basic_ratio = 7; break;
+                case 'continuous': basic_ratio = 26; break;
+                default: basic_ratio = 20;
+            }
+            const fs_deflection = (As_prov > 0) ? (2/3) * inputs.fy * (flexuralCalcs.As_req / As_prov) : 0;
+            const mod_factor_tension = (M_abs > 0) ? Math.min(2.0, 0.55 + (477 - fs_deflection) / (120 * (0.9 + (M_abs * 1e6) / (inputs.b * d_y**2)))) : 2.0;
+            const rho_prime = (compressionRebar.area > 0) ? (100 * compressionRebar.area) / (inputs.b * d_y) : 0;
+            const mod_factor_compression = Math.min(1.5, 1 + rho_prime / (3 + rho_prime));
+            const allowable_ratio = basic_ratio * mod_factor_tension * mod_factor_compression;
+            const actual_ratio = inputs.span * 1000 / d_y;
+            const deflection_check = actual_ratio <= allowable_ratio;
+            
+            // Crack Width Check
+            let w_k_flexural = 0;
+            let fs_crack = 0;
+            let x_sls = 0;
+            let eps_m = 0;
+            let acr_flexural = 0;
+
+            const M_sls = Math.abs(inputs.M_sls);
+            const isHogging_sls = inputs.M_sls >= 0;
+            const tensionRebar_sls = isHogging_sls ? topBars : bottomBars;
+            const compressionRebar_sls = isHogging_sls ? bottomBars : topBars;
+            const As_prov_sls = tensionRebar_sls.area;
+            const As_prime_prov_sls = compressionRebar_sls.area;
+            const d_y_sls = isHogging_sls ? (inputs.h - d_top_centroid) : (inputs.h - d_bottom_centroid_from_bottom);
+            const d_prime_sls = isHogging_sls ? d_bottom_centroid_from_bottom : d_top_centroid;
+
+            if (M_sls > 0 && As_prov_sls > 0) {
+                 // Cracked section analysis for SLS
+                const alpha_e = 15; // Modular ratio, common assumption
+                const A = 0.5 * inputs.b;
+                const B = alpha_e * As_prov_sls + (alpha_e - 1) * As_prime_prov_sls;
+                const C = -(alpha_e * As_prov_sls * d_y_sls + (alpha_e - 1) * As_prime_prov_sls * d_prime_sls);
+                
+                // Solve quadratic equation Ax^2 + Bx + C = 0 for neutral axis depth x_sls
+                x_sls = (-B + Math.sqrt(B**2 - 4 * A * C)) / (2 * A);
+                
+                // Lever arm for SLS
+                const z_sls = d_y_sls - x_sls / 3;
+                
+                // Steel stress under SLS moment
+                fs_crack = (M_sls * 1e6) / (As_prov_sls * z_sls);
+
+                const tensionBarDiaValue = tensionRebar_sls.layers[0]?.dia || 0;
+                const c_min = c_nom + inputs.linkDia;
+                acr_flexural = tensionRebar_sls.num > 0 ? Math.sqrt((c_min + tensionBarDiaValue/2)**2 + (inputs.b / (2 * tensionRebar_sls.num))**2) - tensionBarDiaValue/2 : 0;
+                
+                const Es = 200000; // Young's Modulus for steel
+                const eps1 = (fs_crack / Es) * ( (inputs.h - x_sls) / (d_y_sls - x_sls) );
+                eps_m = eps1 - (inputs.b * (inputs.h - x_sls)**2) / (3 * Es * As_prov_sls * (d_y_sls - x_sls));
+
+                if (!deflection_check) { // Only calculate if deemed-to-satisfy fails
+                     w_k_flexural = (3 * acr_flexural * eps_m) / (1 + 2 * (acr_flexural - c_min) / (inputs.h - x_sls));
+                }
+            }
+            
+            const alpha_t = 10e-6, eps_r = 0.8 * alpha_t * inputs.T1 * inputs.R;
+            const tensionBarDiaValueForThermal = tensionRebar.layers[0]?.dia || 0;
+            const acr_thermal = c_nom + inputs.linkDia + tensionBarDiaValueForThermal/2;
+            const w_k_thermal = 3 * acr_thermal * eps_r;
+
+            const total_crack_width = w_k_flexural + w_k_thermal;
+
+            const crack_width_html = `
+                 ${!deflection_check ? `
+                <h4>Flexural Crack Calculation <span class="citation">Cl. 7.2.3</span></h4>
+                <table>
+                    <tr><td>Service Steel Stress, f<sub>s</sub></td><td class="formula">M<sub>sls</sub> / (A<sub>s,prov</sub>&middot;z<sub>sls</sub>)</td><td>${fs_crack.toFixed(1)} N/mm²</td></tr>
+                    <tr><td>Distance to corner of bar, a<sub>cr</sub></td><td>Calculated from geometry</td><td>${acr_flexural.toFixed(1)} mm</td></tr>
+                    <tr><td>Average Strain, &epsilon;<sub>m</sub></td><td class="formula">&epsilon;<sub>1</sub> - f(b<sub>t</sub>,h,x,E<sub>s</sub>,A<sub>s</sub>,d)</td><td>${eps_m.toExponential(2)}</td></tr>
+                    <tr><td>Calculated Flexural Crack Width, w<sub>k,flex</sub></td><td class="formula">3a<sub>cr</sub>&epsilon;<sub>m</sub> / (1+...)</td><td>${w_k_flexural.toFixed(3)} mm</td></tr>
+                </table>` : `<p>Deemed-to-satisfy span/depth ratio is met. Flexural crack width calculation not required.</p>`}
+                <h4>Early Thermal Crack Calculation <span class="citation">Cl. 7.2.4</span></h4>
+                <table>
+                     <tr><td>Restrained Strain, &epsilon;<sub>r</sub></td><td class="formula">0.8 &alpha; T<sub>1</sub> R</td><td>${eps_r.toExponential(2)}</td></tr>
+                    <tr><td>Distance to surface of bar, a<sub>cr</sub></td><td>c<sub>nom</sub> + &oslash;<sub>link</sub> + &oslash;<sub>bar</sub>/2</td><td>${acr_thermal.toFixed(1)} mm</td></tr>
+                     <tr><td>Calculated Thermal Crack Width, w<sub>k,therm</sub></td><td class="formula">3 a<sub>cr</sub> &epsilon;<sub>r</sub></td><td>${w_k_thermal.toFixed(3)} mm</td></tr>
+                </table>
+                <h4>Total Crack Width Check</h4>
+                <table>
+                     <tr style="font-weight: bold;"><td>Total Estimated Crack Width, w<sub>k,total</sub></td><td class="formula">w<sub>k,flex</sub> + w<sub>k,therm</sub></td><td>${total_crack_width.toFixed(3)} mm</td></tr>
+                     <tr><td>Allowable Crack Width</td><td>Per CoP 2013</td><td>0.3 mm <span class="citation">Table 7.1</span></td></tr>
+                     <tr><td>Check</td><td>w<sub>k,total</sub> &le; 0.3</td><td class="${total_crack_width <= 0.3 ? 'check-ok' : 'check-fail'}">${total_crack_width <= 0.3 ? 'OK' : 'FAIL'}</td></tr>
+                </table>
+            `;
+
+            const calcs = { M_eff, c_nom, d_y, d_prime, flexuralCalcs, topBars, bottomBars, As_prov, As_prime_prov, shearCalcsY, shearCalcsX, v_max_limit, torsionalCalcs, combined_Asv_s_req, Asv_s_prov, deflection_check, allowable_ratio, actual_ratio, crack_width_html, failureReason: designCheckResult.reason, finalLinkDia: inputs.linkDia, sv_prov: inputs.linkSpacing, basic_ratio, tensionRebar, compressionRebar };
+            lastCalculation = { inputs, calcs };
+
+            const recommendationDiv = document.getElementById('recommendation-section'), recommendationOutputDiv = document.getElementById('recommendation-output');
+            if(!overall_pass) {
+                recommendationOutputDiv.innerHTML = `Failure Reason: <strong>${designCheckResult.reason}</strong>`;
+                recommendationDiv.style.display = 'block';
+            } else { 
+                recommendationDiv.style.display = 'none'; 
+            }
+
+            generateReport(inputs, calcs);
+        }
+        
+        // --- Gemini API Functions ---
+        async function performAIAction(prompt, buttonId, buttonText) {
+            const btn = document.getElementById(buttonId);
+            const overviewTextarea = document.querySelector('#overview-text');
+            btn.innerHTML = '<div class="loader"></div>';
+            btn.disabled = true;
+
+            try {
+                let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                const payload = { contents: chatHistory };
+                const apiKey = ""; // IMPORTANT: Add your Gemini API key here for local use
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.statusText}`);
+                }
+                const result = await response.json();
+
+                if (result.candidates && result.candidates[0].content.parts[0].text) {
+                    overviewTextarea.value = result.candidates[0].content.parts[0].text;
+                } else {
+                    overviewTextarea.value = "AI could not generate a response. Please check the console for details.";
+                    console.error("Unexpected API response:", result);
+                }
+            } catch (error) {
+                console.error('Error calling Gemini API:', error);
+                overviewTextarea.value = `Error generating response: ${error.message}. Please try again.`;
+            } finally {
+                btn.innerHTML = buttonText;
+                btn.disabled = false;
+            }
+        }
+
+        async function generateAIRecommendation() {
+            const { inputs, calcs } = lastCalculation;
+            if (!inputs || !calcs || !calcs.failureReason) {
+                alert("No failure detected or report not generated yet.");
+                return;
+            }
+            const btn = document.getElementById('ai-recommend-btn');
+            const outputDiv = document.getElementById('recommendation-output');
+            btn.innerHTML = '<div class="loader"></div> Generating...';
+            btn.disabled = true;
+
+            const prompt = `As a senior structural engineer, a concrete beam design has failed.
+            
+            **Failed Design Inputs:**
+            - Section: ${inputs.b}mm x ${inputs.h}mm
+            - ULS Loads: M=${inputs.M}kNm, Vy=${inputs.Vy}kN
+            - Materials: fcu=${inputs.fcu}, fy=${inputs.fy}
+            - **Failure Reason: ${calcs.failureReason}**
+
+            Provide a concise, actionable recommendation to fix the design. Suggest specific, practical changes to the beam's dimensions (width 'b' or height 'h') or material grades (fcu). For example: "The section fails in flexure. Consider increasing beam height (h) to 550mm." or "The section fails in shear. Try increasing concrete grade to C40/50 or increasing beam width (b) to 300mm.".
+            `;
+
+            try {
+                let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                const payload = { contents: chatHistory };
+                 // IMPORTANT: If running this file locally, you must replace the empty string with your own Gemini API key.
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates[0].content.parts[0].text) {
+                     outputDiv.innerHTML = `<strong>AI Suggestion:</strong><br>${result.candidates[0].content.parts[0].text.replace(/\*/g, '')}`;
+                } else {
+                    outputDiv.innerHTML = "AI could not generate a recommendation.";
+                    console.error("Unexpected API response:", result);
+                }
+
+            } catch(error) {
+                console.error("Error calling Gemini API for recommendation:", error);
+                outputDiv.innerHTML = "Error getting AI suggestion. Please check the console.";
+            } finally {
+                btn.innerHTML = '✨ Ask AI for Suggestion';
+                btn.disabled = false;
+            }
+        }
+
+        // --- Report Generation & Rendering ---
+        function generateReport(inputs, calcs) {
+            const { M_eff, c_nom, d_y, d_prime, flexuralCalcs, topBars, bottomBars, As_prov, As_prime_prov, shearCalcsY, shearCalcsX, v_max_limit, torsionalCalcs, combined_Asv_s_req, Asv_s_prov, deflection_check, allowable_ratio, actual_ratio, crack_width_html, finalLinkDia, sv_prov, basic_ratio, tensionRebar, compressionRebar } = calcs;
+            const v_res = Math.sqrt(shearCalcsY.v**2 + shearCalcsX.v**2);
+
+            const designer = document.getElementById('designerName').value || 'N/A', checkedBy = document.getElementById('checkedBy').value || 'N/A';
+            const title = document.getElementById('projectTitle').value || 'N/A', subTitle = document.getElementById('projectSubTitle').value || 'Design Calculation Report';
+            const date = document.getElementById('reportDate').value || new Date().toISOString().slice(0, 10), revision = document.getElementById('reportRevision').value || 'N/A';
+            const logoInput = document.getElementById('companyLogo').files[0], logoSrc = logoInput ? URL.createObjectURL(logoInput) : '';
+
+            const shear_design_status_html = (sv_prov > 0) ? `<td class="final-rebar">T${finalLinkDia} @ ${sv_prov} mm c/c (${inputs.numLinkLegs} legs)</td><td>${Asv_s_prov.toFixed(3)}</td><td class="${Asv_s_prov >= combined_Asv_s_req ? 'check-ok' : 'check-fail'}">${Asv_s_prov >= combined_Asv_s_req ? 'OK' : 'FAIL'}</td>` : `<td class="check-fail" colspan="3">FAIL. Increase section/link size.</td>`;
+            
+            let flex_util_ratio = (As_prov > 0) ? flexuralCalcs.As_req / As_prov : 0;
+            let topBarSummary = topBars.layers.map(l => `${l.num}T${l.dia}`).join(' + ') || 'None';
+            let bottomBarSummary = bottomBars.layers.map(l => `${l.num}T${l.dia}`).join(' + ') || 'None';
+
+            let sectionCounter = 1;
+            
+            let overviewHTML = '';
+            if (inputs.includeOverview) {
+                overviewHTML = `
+                <div id="overview-section">
+                    <h2>${sectionCounter++}. Overview</h2>
+                    <textarea id="overview-text" placeholder="Enter project overview here..."></textarea>
+                </div>`;
+            }
+
+            let html = `
+            <div class="page-container">
+                <div class="report-header">
+                    <div class="logo-container">${logoSrc ? `<img src="${logoSrc}" alt="Company Logo">` : 'Logo'}</div>
+                    <div class="right-content">
+                        <div class="title-container"><h2>${title}</h2><h3>${subTitle}</h3></div>
+                        <div class="info-container">
+                             <div class="info-cell"><p><span>Project No:</span><br>BEAM-001</p></div>
+                             <div class="info-cell"><p><span>Designed By:</span> ${designer}<br><span>Checked By:</span> ${checkedBy}</p></div>
+                             <div class="info-cell"><p><span>Date:</span> ${date}<br><span>Revision:</span> ${revision}</p></div>
+                        </div>
+                    </div>
+                </div>
+                ${overviewHTML}
+                
+                <h2>${sectionCounter++}. Design Check Summary</h2>
+                <div class="design-summary-container">
+                    <div class="summary-card-container">
+                        <div class="summary-card">
+                            <h4>Section & Reinforcement</h4>
+                            <p><strong>Section:</strong> ${inputs.b}mm &times; ${inputs.h}mm</p>
+                            <p><strong>Top Bars:</strong> <span class="final-rebar">${topBarSummary}</span></p>
+                            <p><strong>Bottom Bars:</strong> <span class="final-rebar">${bottomBarSummary}</span></p>
+                            <p><strong>Shear Links:</strong> <span class="final-rebar">T${finalLinkDia} @ ${sv_prov > 0 ? sv_prov : 'N/A'} mm c/c (${inputs.numLinkLegs} legs)</span></p>
+                        </div>
+                        <div class="summary-card">
+                             <h4>Key Utilization Ratios</h4>
+                             <p><strong>Flexure (A<sub>s,req</sub>/A<sub>s,prov</sub>):</strong> ${flex_util_ratio.toFixed(2)} <span class="${flex_util_ratio <= 1 ? 'check-ok' : 'check-fail'}">${flex_util_ratio <= 1 ? 'OK' : 'FAIL'}</span></p>
+                             <p><strong>Shear (v<sub>y</sub>/v<sub>max</sub>):</strong> ${(shearCalcsY.v / v_max_limit).toFixed(2)} <span class="${shearCalcsY.v <= v_max_limit ? 'check-ok' : 'check-fail'}">${shearCalcsY.v <= v_max_limit ? 'OK' : 'FAIL'}</span></p>
+                             <p><strong>Deflection (Actual/Allow):</strong> ${(actual_ratio / allowable_ratio).toFixed(2)} <span class="${deflection_check ? 'check-ok' : 'check-fail'}">${deflection_check ? 'OK' : 'FAIL'}</span></p>
+                        </div>
+                    </div>
+                    <div class="beam-sketch">
+                         ${generateRebarSVG(bottomBars, topBars, inputs, c_nom, 40, finalLinkDia)}
+                         <h3>Typical Cross-Section</h3>
+                    </div>
+                </div>
+               
+                <h2>${sectionCounter++}. Design Parameters & Material Properties</h2>
+                <table><tr><th>Parameter</th><th>Formula</th><th>Value</th><th>Reference</th></tr>
+                <tr><td>Effective Depth (Tension), d</td><td class="formula">Calculated Centroid</td><td>${d_y.toFixed(1)} mm</td><td></td></tr>
+                <tr><td>Effective Depth (Comp.), d'</td><td class="formula">Calculated Centroid</td><td>${d_prime.toFixed(1)} mm</td><td></td></tr>
+                <tr><td>Concrete Grade, f<sub>cu</sub></td><td>-</td><td>${inputs.fcu} N/mm²</td><td><span class="citation">Table 3.1</span></td></tr>
+                <tr><td>Rebar Grade, f<sub>y</sub></td><td>-</td><td>${inputs.fy} N/mm²</td><td><span class="citation">Table 3.3</span></td></tr>
+                <tr><td>Nominal Cover, c<sub>nom</sub></td><td>User Input</td><td>${c_nom} mm</td><td><span class="citation">Cl 4.2.4</span></td></tr>
+                </table>
+                
+                <h2>${sectionCounter++}. Loading Input</h2>
+                <div class="section-with-diagram">
+                    <div>
+                        <h4>ULS (Factored)</h4>
+                        <table><tr><th>Load Type</th><th>Value</th><th>Notes</th></tr><tr><td>Axial Load, N</td><td>${inputs.N} kN</td><td>+ve Comp, -ve Ten</td></tr><tr><td>Shear Force, V<sub>y</sub></td><td>${inputs.Vy} kN</td><td>Major Axis</td></tr><tr><td>Shear Force, V<sub>x</sub></td><td>${inputs.Vx} kN</td><td>Minor Axis</td></tr><tr><td>Bending Moment, M</td><td>${inputs.M} kNm</td><td>+ve Hogging, -ve Sagging</td></tr><tr><td>Torsion, T</td><td>${inputs.T} kNm</td><td></td></tr></table>
+                        <h4>SLS (Unfactored)</h4>
+                        <table><tr><th>Load Type</th><th>Value</th><th>Notes</th></tr><tr><td>Bending Moment, M<sub>sls</sub></td><td>${inputs.M_sls} kNm</td><td>For Crack/Deflection</td></tr></table>
+                    </div>
+                    <div class="beam-sketch">
+                        ${generateLoadingDiagramSVG()}
+                        <h3>Loading Diagram</h3>
+                    </div>
+                </div>
+
+                <h2>${sectionCounter++}. Flexural Design (ULS) <span class="citation">Cl. 6.1.2</span></h2>
+                <table><tr><td>Design Moment, M<sub>eff</sub></td><td>Adjusted for axial load</td><td>${M_eff > 0 ? (M_eff / 1e6).toFixed(2) : "N/A"} kNm</td></tr><tr><td>K</td><td class="formula">M<sub>eff</sub> / (b&middot;d²&middot;f<sub>cu</sub>)</td><td>${flexuralCalcs.K.toFixed(3)}</td></tr><tr><td>K' Limit</td><td>For f<sub>cu</sub>=${inputs.fcu} N/mm²</td><td>${flexuralCalcs.K_prime.toFixed(3)} <span class="citation">Cl 6.1.2.4(b)</span></td></tr>
+                <tr><td>Check K &le; K'</td><td></td><td class="${!flexuralCalcs.isDoubly ? 'check-ok' : 'check-fail'}">${!flexuralCalcs.isDoubly ? 'OK - Singly Reinforced' : 'Doubly Reinforced Required'}</td></tr>
+                </table>
+                ${!flexuralCalcs.isDoubly ? `<table><tr><td>Lever Arm, z</td><td class="formula">d&middot;[0.5 + &radic;(0.25-K/0.9)]</td><td>${flexuralCalcs.z.toFixed(1)} mm</td></tr>
+                <tr><td>Required Tension Steel, A<sub>s,req</sub></td><td class="formula">M<sub>eff</sub> / (0.87f<sub>y</sub>z)</td><td>${flexuralCalcs.As_req.toFixed(1)} mm²</td></tr>
+                <tr><td>Proposed Tension Steel</td><td>-</td><td class="final-rebar">${tensionRebar.layers.map(l => l.num + 'T' + l.dia).join(' + ')} (${As_prov.toFixed(1)} mm²)</td></tr>
+                <tr><td>Check</td><td>A<sub>s,prov</sub> &ge; A<sub>s,req</sub></td><td class="${As_prov >= flexuralCalcs.As_req ? 'check-ok' : 'check-fail'}">${As_prov >= flexuralCalcs.As_req ? 'OK' : 'FAIL'}</td></tr>
+                </table>` : `<table><tr><td>Lever Arm, z</td><td class="formula">d&middot;[0.5 + &radic;(0.25-K'/0.9)]</td><td>${flexuralCalcs.z.toFixed(1)} mm</td></tr>
+                <tr><td>Req. Compression Steel, A'<sub>s,req</sub></td><td class="formula">(M<sub>eff</sub>-M<sub>limit</sub>)/(0.87f<sub>y</sub>(d-d'))</td><td>${flexuralCalcs.As_prime_req.toFixed(1)} mm²</td></tr>
+                <tr><td>Proposed Comp. Steel</td><td>-</td><td class="final-rebar">${compressionRebar.layers.map(l => l.num + 'T' + l.dia).join(' + ')} (${As_prime_prov.toFixed(1)} mm²)</td></tr>
+                <tr><td>Required Tension Steel, A<sub>s,req</sub></td><td class="formula">A<sub>s,bal</sub> + A'<sub>s,req</sub></td><td>${flexuralCalcs.As_req.toFixed(1)} mm²</td></tr>
+                <tr><td>Proposed Tension Steel</td><td>-</td><td class="final-rebar">${tensionRebar.layers.map(l => l.num + 'T' + l.dia).join(' + ')} (${As_prov.toFixed(1)} mm²)</td></tr>
+                <tr><td>Check</td><td>A<sub>s,prov</sub> &ge; A<sub>s,req</sub></td><td class="${As_prov >= flexuralCalcs.As_req ? 'check-ok' : 'check-fail'}">${As_prov >= flexuralCalcs.As_req ? 'OK' : 'FAIL'}</td></tr>
+                </table>`}
+                
+                <h2>${sectionCounter++}. Shear Design (ULS) <span class="citation">Cl. 6.1.2.5</span></h2>
+                <h3>Major Axis (Y-Y) Shear</h3>
+                <table><tr><td>Design Shear Stress, v<sub>y</sub></td><td class="formula">V<sub>y</sub> / (bd)</td><td>${shearCalcsY.v.toFixed(2)} N/mm²</td></tr>
+                <tr><td>Concrete Shear Capacity, v<sub>c</sub></td><td>Adjusted for N</td><td>${shearCalcsY.vc.toFixed(2)} N/mm² <span class="citation">Table 6.3</span></td></tr>
+                <tr><td>Req. Shear Links, (A<sub>sv</sub>/s<sub>v</sub>)<sub>y</sub></td><td class="formula">(v<sub>y</sub> - v<sub>c</sub>)b / (0.87f<sub>yv</sub>)</td><td>${shearCalcsY.Asv_s_req.toFixed(3)}</td></tr>
+                </table>
+                <h3>Minor Axis (X-X) Shear (Simplified)</h3>
+                <table><tr><td>Design Shear Stress, v<sub>x</sub></td><td class="formula">V<sub>x</sub> / (hd<sub>x</sub>)</td><td>${shearCalcsX.v.toFixed(2)} N/mm²</td></tr>
+                 <tr><td>Concrete Shear Capacity, v<sub>c</sub></td><td>Assumed same as v<sub>cy</sub></td><td>${shearCalcsX.vc.toFixed(2)} N/mm²</td></tr>
+                 <tr><td>Req. Shear Links, (A<sub>sv</sub>/s<sub>v</sub>)<sub>x</sub></td><td class="formula">(v<sub>x</sub> - v<sub>c</sub>)h / (0.87f<sub>yv</sub>)</td><td>${shearCalcsX.Asv_s_req.toFixed(3)}</td></tr>
+                </table>
+                
+                <h2>${sectionCounter++}. Torsional Design (ULS) <span class="citation">Cl. 6.3</span></h2>
+                <table>
+                <tr><td>Torsional Shear Stress, v<sub>t</sub></td><td>Calculated</td><td>${torsionalCalcs.vt.toFixed(2)} N/mm² <span class="citation">Cl 6.3.3</span></td></tr>
+                <tr><td>Resultant Shear Stress, v<sub>res</sub></td><td class="formula">&radic;(v<sub>y</sub>² + v<sub>x</sub>²)</td><td>${v_res.toFixed(2)} N/mm²</td></tr>
+                <tr><td>Check v<sub>res</sub>+v<sub>t</sub> &le; v<sub>tu</sub></td><td>${(v_res + torsionalCalcs.vt).toFixed(2)} &le; ${torsionalCalcs.vtu.toFixed(2)}</td><td class="${(v_res + torsionalCalcs.vt) <= torsionalCalcs.vtu ? 'check-ok' : 'check-fail'}">${(v_res + torsionalCalcs.vt) <= torsionalCalcs.vtu ? 'OK' : 'FAIL'}</td></tr>
+                ${torsionalCalcs.vt > torsionalCalcs.vt_min ? `<tr><td>Req. A<sub>sv</sub>/s<sub>v</sub> (Torsion)</td><td></td><td>${torsionalCalcs.Asv_T_s_req.toFixed(3)}</td></tr>` : `<tr><td colspan="3">v<sub>t</sub> &le; v<sub>t,min</sub>. No torsional reinforcement required.</td></tr>`}</table>
+                
+                <h4>Combined Shear & Torsion Links</h4><table>
+                <tr><td>Total Required A<sub>sv</sub>/s<sub>v</sub></td><td class="formula">(A<sub>sv</sub>/s<sub>v</sub>)<sub>y</sub> + (A<sub>sv</sub>/s<sub>v</sub>)<sub>x</sub> + (A<sub>sv</sub>/s<sub>v</sub>)<sub>T</sub></td><td>${combined_Asv_s_req.toFixed(3)}</td></tr>
+                <tr><td>Proposed Links</td><td>A<sub>sv</sub>/s<sub>v</sub></td>${shear_design_status_html}</tr></table>
+                
+                <h2>${sectionCounter++}. Deflection Check (SLS) <span class="citation">Cl. 7.3</span></h2>
+                <table><tr><td>Basic Span/Depth Ratio</td><td>Based on Support Condition</td><td>${basic_ratio} <span class="citation">Table 7.3</span></td></tr>
+                <tr><td>Allowable Span/Depth Ratio</td><td>Adjusted for steel areas</td><td>${allowable_ratio.toFixed(1)} <span class="citation">Table 7.4/7.5</span></td></tr><tr><td>Actual Span/Depth Ratio</td><td class="formula">L / d</td><td>${actual_ratio.toFixed(1)}</td></tr><tr><td>Deflection Check</td><td>Actual &le; Allowable</td><td class="${deflection_check ? 'check-ok' : 'check-fail'}">${deflection_check ? 'OK' : 'FAIL'}</td></tr></table>
+                
+                <h2>${sectionCounter++}. Crack Width Check (SLS) <span class="citation">Cl. 7.2</span></h2>
+                ${crack_width_html}
+            </div>`;
+            document.getElementById('output-section').innerHTML = html;
+        }
+
+        window.onload = function() {
+            addLayer('top');
+            addLayer('bottom');
+            
+            // Setup a single event listener on the panel for efficiency
+            const inputsPanel = document.querySelector('.inputs-panel');
+            if (inputsPanel) {
+                inputsPanel.addEventListener('change', (event) => {
+                    if (event.target.matches('input, select')) {
+                         calculate();
+                    }
+                });
+                inputsPanel.addEventListener('click', (event) => {
+                    if(event.target.classList.contains('remove-layer-btn')) {
+                        removeLayer(event.target);
+                    }
+                });
+            }
+             calculate();
+        };
+    </script>
+</body>
+</html>
+
