@@ -45,14 +45,14 @@
             display: flex;
             flex-wrap: wrap;
             gap: 20px;
-            max-width: 1600px;
+            max-width: 1800px; /* Increased max-width */
             padding: 20px;
             margin: auto;
         }
 
         .inputs-panel {
-            flex: 1;
-            min-width: 350px;
+            flex: 1.5; /* Increased flex-grow for wider panel */
+            min-width: 450px; /* Set a minimum width */
             padding: 20px;
             border-radius: 8px;
             background-color: var(--secondary-color);
@@ -61,7 +61,7 @@
         }
 
         .report-panel {
-            flex: 2.5;
+            flex: 2; /* Adjusted flex-grow */
             min-width: 800px;
         }
 
@@ -135,7 +135,7 @@
             font-size: 0.8rem;
         }
 
-        input, select {
+        input, select, textarea {
             width: 100%;
             padding: 10px;
             border: 1px solid var(--border-color);
@@ -148,24 +148,25 @@
             padding: 4px;
             font-size: 0.9rem;
         }
+        
+        #load-case-table input {
+            padding: 4px;
+            font-size: 0.9rem;
+            border: 1px solid #e2e8f0;
+        }
+        #load-case-table th {
+            font-size: 0.8rem;
+        }
 
         .rebar-table td:first-child {
             font-weight: bold;
             text-align: center;
         }
         
-        textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            box-sizing: border-box;
-            min-height: 80px;
-            resize: vertical;
-            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-            font-size: 14px; /* Adjusted font size */
-            line-height: 1.6;
-            color: var(--text-color);
+        textarea#spreadsheet-data {
+            min-height: 150px;
+            font-family: monospace;
+            font-size: 0.9rem;
         }
 
         button {
@@ -185,18 +186,18 @@
             gap: 8px;
         }
 
-        button.ai-button, button.layer-button {
+        button.ai-button, button.layer-button, button.table-button {
              background-color: var(--warning-color);
              font-size: 14px;
              padding: 8px;
              margin-top: 4px;
         }
-        
-        .ai-button-group {
+
+        .table-button-group {
             display: flex;
             gap: 10px;
         }
-
+        
         button.remove-layer-btn {
             background-color: var(--danger-color);
             width: auto;
@@ -391,57 +392,109 @@
             border-radius: 4px;
             border: 1px solid #90caf9; /* Softer blue border */
         }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+        }
+        .modal-content textarea {
+            height: 200px;
+        }
 
         /* Print-specific styles */
         @media print {
-            body { background-color: #fff; }
+            body {
+                background-color: #fff;
+                font-size: 12px; /* Set base font size to 12px for print */
+                line-height: 1.4; /* Adjust line height for readability */
+            }
             .main-container { display: block; padding: 0; }
             .inputs-panel { display: none; }
             .report-panel { width: 100%; }
             .page-container {
+                width: calc(100% - 50px); /* Adjust width for margins */
                 box-shadow: none;
                 border: none;
-                margin: 0;
-                padding: 0;
+                margin: 20px 20px 20px 30px; /* Top, Right, Bottom, Left */
+                padding: 0; /* Remove padding to use margins for spacing */
+                page-break-after: always; /* Ensure each .page-container is on a new page */
             }
-            h2, h3 { page-break-after: avoid; }
-            table, .design-summary-container, .section-with-diagram { page-break-inside: avoid; }
+            .page-container:last-child {
+                page-break-after: auto;
+            }
+
+            h2, h3 { 
+                page-break-after: avoid; 
+                margin-top: 10px; /* Adjust heading margins */
+                padding-bottom: 4px;
+            }
+            h2 { font-size: 16px; } /* Title font size */
+            h3 { font-size: 14px; } /* Sub-title font size */
+            table { 
+                font-size: 11px; /* Adjust table font size relative to body */
+                margin-top: 8px;
+            }
+            th, td {
+                padding: 4px 5px; /* Adjust cell padding */
+            }
+            .summary-card p {
+                margin: 5px 0; 
+            }
+            .design-summary-container, .section-with-diagram {
+                gap: 15px; 
+            }
+            .beam-sketch {
+                max-width: 280px; 
+            }
+            table, .design-summary-container, .section-with-diagram, #load-case-summary { page-break-inside: avoid; }
         }
     </style>
 </head>
 <body>
     <div class="main-container">
         <div class="inputs-panel">
-            <h1>RC Section Design Inputs (v5.5)</h1>
-
-            <h2>ULS Loading Input (Factored)</h2>
-            <div class="input-group">
-                <label for="axialLoad">Axial Load, N (kN) <span class="convention">(+ for comp, - for tension)</span></label>
-                <input type="number" id="axialLoad" value="0">
-            </div>
-            <div class="input-group">
-                <label for="shearForceY">Shear, V<sub>y</sub> (Major Axis, kN)</label>
-                <input type="number" id="shearForceY" value="95.5">
-            </div>
-             <div class="input-group">
-                <label for="shearForceX">Shear, V<sub>x</sub> (Minor Axis, kN)</label>
-                <input type="number" id="shearForceX" value="0">
-            </div>
-            <div class="input-group">
-                <label for="bendingMoment">Bending Moment, M (kNm) <span class="convention">(+ for hogging, - for sagging)</span></label>
-                <input type="number" id="bendingMoment" value="119.4">
-            </div>
-            <div class="input-group">
-                <label for="torsionMoment">Torsion, T (kNm)</label>
-                <input type="number" id="torsionMoment" value="0">
-            </div>
-
-            <h2>SLS Loading Input (Unfactored)</h2>
-             <div class="input-group">
-                <label for="bendingMoment_sls">Bending Moment, M<sub>sls</sub> (kNm) <span class="convention">(+ for hogging, - for sagging)</span></label>
-                <input type="number" id="bendingMoment_sls" value="80">
-            </div>
+            <h1>RC Section Design Inputs (v5.8)</h1>
             
+            <h2>Batch Load Case Input</h2>
+            <div class="input-group">
+                <table id="load-case-table">
+                    <thead>
+                        <tr>
+                            <th>Case</th>
+                            <th>N</th>
+                            <th>Vy</th>
+                            <th>Vx</th>
+                            <th>M</th>
+                            <th>T</th>
+                            <th>M_sls</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="load-case-tbody">
+                        <!-- Rows will be added dynamically -->
+                    </tbody>
+                </table>
+                <div class="table-button-group">
+                    <button type="button" class="table-button" onclick="addLoadCaseRow()">Add Row</button>
+                    <button type="button" class="table-button" onclick="showPasteModal()">Paste from Spreadsheet</button>
+                </div>
+            </div>
+
             <h2>Material Properties</h2>
             <div class="input-group">
                 <label for="fcu">Concrete Grade, fcu (N/mm²)</label>
@@ -519,13 +572,6 @@
                 <label for="tempDrop">Temperature Drop, T1 (°C) <span class="convention">(for thermal crack)</span></label>
                 <input type="number" id="tempDrop" value="30">
             </div>
-
-            <div id="recommendation-section">
-                <h2>Design Recommendation</h2>
-                <p>The preliminary section fails one or more design checks.</p>
-                <div id="recommendation-output"></div>
-                <button id="ai-recommend-btn" class="ai-button" onclick="generateAIRecommendation()">✨ Ask AI for Suggestion</button>
-            </div>
             
             <h2>Report Details</h2>
              <div class="input-group"><label for="designerName">Designer</label><input type="text" id="designerName" value="C.E."></div>
@@ -540,33 +586,38 @@
                 <label for="includeOverview">Include Overview Section</label>
              </div>
             
-            <button id="calc-btn" onclick="calculate()">Verify Design</button>
+            <button id="calc-btn" onclick="runBatchAnalysis()">Analyze & Verify Design</button>
             <button id="print-btn" onclick="window.print()">Print to PDF</button>
             
             <div class="version-notes">
-                <strong>Notes on V5.5 Update:</strong>
+                <strong>Notes on V5.8 Update:</strong>
                 <ul>
-                    <li>Added input for number of shear link legs for more accurate shear design.</li>
-                    <li>Added an option to include or exclude the Overview section.</li>
-                    <li>SLS moment input is now a single field, using sign convention.</li>
-                    <li>Fixed diagram scaling and annotation issues for clarity.</li>
+                    <li>Replaced batch text input with an interactive table.</li>
+                    <li>Added a "Paste from Spreadsheet" feature to populate the table.</li>
+                    <li>Print styles have been further refined for better layout and readability.</li>
                 </ul>
             </div>
         </div>
 
         <div class="report-panel" id="output-section"></div>
     </div>
+
+    <div id="paste-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <h3>Paste from Spreadsheet</h3>
+            <p>Paste your data below. Data should be tab-separated (copied from Excel/Sheets) and have the following columns: Case, N, Vy, Vx, M, T, M_sls.</p>
+            <textarea id="spreadsheet-data"></textarea>
+            <div class="table-button-group">
+                <button onclick="processPastedData()" class="table-button">Process Data</button>
+                <button onclick="hidePasteModal()" class="table-button" style="background-color: var(--danger-color);">Cancel</button>
+            </div>
+        </div>
+    </div>
     
-    <!-- IMPORTANT NOTE FOR LOCAL USE:
-         To enable the AI features ("Generate Overview" and "AI Suggestion") when running this file 
-         locally on your computer, you must obtain a free Gemini API key from Google AI Studio 
-         (https://aistudio.google.com/app/apikey) and insert it into the script below.
-    -->
     <script>
         // --- Global Variables ---
         document.getElementById('reportDate').valueAsDate = new Date();
         const barData = { 6: 28.3, 8: 50.3, 10: 78.5, 12: 113.1, 16: 201.1, 20: 314.2, 25: 490.9, 32: 804.3, 40: 1256.6, 50: 1963.5 };
-        let lastCalculation = {}; // To store the latest results for AI functions
         
         // --- UI & Helper Functions ---
         
@@ -689,156 +740,53 @@
                         <option value="8">8</option><option value="10">10</option><option value="12">12</option><option value="16" ${layerNum === 1 && type==='top' ? 'selected' : ''}>16</option><option value="20">20</option><option value="25" ${layerNum === 1 && type==='bottom' ? 'selected' : ''}>25</option><option value="32">32</option><option value="40">40</option><option value="50">50</option>
                     </select></td>
                 <td>${layerNum > 1 ? '<input type="number" class="clear-spacing" value="25">' : 'N/A'}</td>
-                <td><button type="button" class="remove-layer-btn">X</button></td>
+                <td><button type="button" class="remove-layer-btn" onclick="this.closest('tr').remove()">X</button></td>
             `;
         }
+        
+        function addLoadCaseRow(data = []) {
+            const tableBody = document.getElementById('load-case-tbody');
+            const newRow = tableBody.insertRow();
+            newRow.innerHTML = `
+                <td><input type="text" value="${data[0] || ''}"></td>
+                <td><input type="number" value="${data[1] || 0}"></td>
+                <td><input type="number" value="${data[2] || 0}"></td>
+                <td><input type="number" value="${data[3] || 0}"></td>
+                <td><input type="number" value="${data[4] || 0}"></td>
+                <td><input type="number" value="${data[5] || 0}"></td>
+                <td><input type="number" value="${data[6] || 0}"></td>
+                <td><button type="button" class="remove-layer-btn" onclick="this.closest('tr').remove()">X</button></td>
+            `;
+        }
+        
+        function showPasteModal() {
+            document.getElementById('paste-modal').style.display = 'flex';
+        }
 
-        function removeLayer(buttonElement) {
-            const row = buttonElement.closest('tr');
-            const tableBody = row.parentElement;
-            row.remove();
-            // Re-number remaining rows
-            Array.from(tableBody.rows).forEach((r, i) => {
-                r.cells[0].textContent = i + 1;
-                if (i === 0) { // First layer
-                    const spacingCell = r.cells[3];
-                    if (spacingCell.querySelector('input')) {
-                       spacingCell.innerHTML = 'N/A';
-                    }
+        function hidePasteModal() {
+            document.getElementById('paste-modal').style.display = 'none';
+        }
+
+        function processPastedData() {
+            const data = document.getElementById('spreadsheet-data').value;
+            const lines = data.trim().split('\n');
+            const tableBody = document.getElementById('load-case-tbody');
+            tableBody.innerHTML = ''; // Clear existing rows
+
+            lines.forEach(line => {
+                const parts = line.split(/\t/); // Split by tab for Excel/Sheets
+                if (parts.length >= 7) {
+                    addLoadCaseRow(parts);
                 }
             });
-            calculate();
+            hidePasteModal();
         }
 
 
         // --- Core Calculation & Report Generation ---
         
-        function runDesignChecks(calcInputs, rebarInputs) {
-            const isHogging = calcInputs.M >= 0;
-            const c_nom = calcInputs.c_nom;
-            
-            let totalTensionArea = 0;
-            let momentOfTensionArea = 0;
-            const tensionLayers = isHogging ? rebarInputs.topLayers : rebarInputs.bottomLayers;
-            
-            if (tensionLayers.length === 0) {
-                 return { pass: false, reason: 'No tension reinforcement provided.' };
-            }
-
-            let currentDepth = c_nom + calcInputs.linkDia;
-            tensionLayers.forEach((layer, index) => {
-                 if(index > 0) {
-                    const prevLayer = tensionLayers[index-1];
-                    // Ensure spacing is valid
-                    const spacing = Math.max(layer.spacing, prevLayer.dia, calcInputs.aggSize + 5, 20);
-                    currentDepth += prevLayer.dia / 2 + spacing + layer.dia / 2;
-                } else {
-                    currentDepth += layer.dia / 2;
-                }
-                layer.depth = currentDepth;
-                totalTensionArea += layer.area;
-                momentOfTensionArea += layer.area * layer.depth;
-            });
-            
-            const d_tension_centroid = totalTensionArea > 0 ? momentOfTensionArea / totalTensionArea : 0;
-            const d_y = calcInputs.h - d_tension_centroid;
-
-            if (d_y <= 0) return { pass: false, reason: 'Invalid effective depth. Check beam height and reinforcement cover.' };
-
-            const M_abs = Math.abs(calcInputs.M);
-            const M_eff = M_abs + calcInputs.N * (calcInputs.h/2 - d_tension_centroid);
-            
-            if (M_eff < 0) return { pass: false, reason: 'Axial load causes moment reversal. Check inputs.' };
-            
-            const K = M_eff * 1e6 / (calcInputs.b * d_y**2 * calcInputs.fcu);
-            const K_prime = (calcInputs.fcu <= 45) ? 0.156 : ((calcInputs.fcu <= 70) ? 0.120 : 0.094);
-            if (K > K_prime) return { pass: false, reason: `Flexure Failure (K = ${K.toFixed(3)} > K' = ${K_prime.toFixed(3)})` };
-            
-            const z = Math.min(d_y * (0.5 + Math.sqrt(0.25 - K / 0.9)), 0.95 * d_y);
-            const As_req = M_eff * 1e6 / (0.87 * calcInputs.fy * z);
-            
-            const vy = calcInputs.Vy * 1e3 / (calcInputs.b * d_y);
-            const v_max_limit = Math.min(0.8 * Math.sqrt(calcInputs.fcu), 7.0);
-            if (vy > v_max_limit) return { pass: false, reason: `Shear Failure (v = ${vy.toFixed(2)} > vmax = ${v_max_limit.toFixed(2)})` };
-            
-            let basic_ratio;
-            switch(calcInputs.supportCondition) {
-                case 'cantilever': basic_ratio = 7; break;
-                case 'continuous': basic_ratio = 26; break;
-                default: basic_ratio = 20;
-            }
-            const fs_deflection = (totalTensionArea > 0) ? (2/3) * calcInputs.fy * (As_req / totalTensionArea) : 0;
-            const mod_factor_tension = (M_abs > 0) ? Math.min(2.0, 0.55 + (477 - fs_deflection) / (120 * (0.9 + (M_abs * 1e6) / (calcInputs.b * d_y**2)))) : 2.0;
-            const allowable_ratio = basic_ratio * mod_factor_tension;
-            const actual_ratio = calcInputs.span * 1000 / d_y;
-            if (actual_ratio > allowable_ratio) return { pass: false, reason: `Deflection Failure (Actual/Allowable = ${(actual_ratio / allowable_ratio).toFixed(2)})`};
-            
-            return { pass: true, h: calcInputs.h, b: calcInputs.b, As_req, failureReason: null };
-        }
-        
-        // --- Main Calculation Orchestrator ---
-        function calculate() {
-            // Read rebar layers first
-            const topLayers = [], bottomLayers = [];
-            
-            document.querySelectorAll('#top-layers-container tr').forEach((row) => {
-                const numInput = row.querySelector('.num-bars');
-                const diaSelect = row.querySelector('.bar-dia');
-                const spacingInput = row.querySelector('.clear-spacing');
-                if (numInput && diaSelect) {
-                    const num = parseInt(numInput.value) || 0;
-                    const dia = parseFloat(diaSelect.value) || 0;
-                    const spacing = spacingInput ? (parseFloat(spacingInput.value) || 25) : 25;
-                    if(num > 0 && dia > 0) {
-                        topLayers.push({ num, dia, area: num * barData[dia], spacing });
-                    }
-                }
-            });
-            document.querySelectorAll('#bottom-layers-container tr').forEach((row) => {
-                const numInput = row.querySelector('.num-bars');
-                const diaSelect = row.querySelector('.bar-dia');
-                const spacingInput = row.querySelector('.clear-spacing');
-                if (numInput && diaSelect) {
-                    const num = parseInt(numInput.value) || 0;
-                    const dia = parseFloat(diaSelect.value) || 0;
-                    const spacing = spacingInput ? (parseFloat(spacingInput.value) || 25) : 25;
-                    if(num > 0 && dia > 0) {
-                        bottomLayers.push({ num, dia, area: num * barData[dia], spacing });
-                    }
-                }
-            });
-            
-            const rebarInputs = { topLayers, bottomLayers };
-
-            const supportConditionEl = document.getElementById('supportCondition');
-            const inputs = {
-                // ULS Loads
-                N: parseFloat(document.getElementById('axialLoad')?.value || 0), 
-                Vy: parseFloat(document.getElementById('shearForceY')?.value || 0),
-                Vx: parseFloat(document.getElementById('shearForceX')?.value || 0), 
-                M: parseFloat(document.getElementById('bendingMoment')?.value || 0),
-                T: parseFloat(document.getElementById('torsionMoment')?.value || 0),
-                // SLS Loads
-                M_sls: parseFloat(document.getElementById('bendingMoment_sls')?.value || 0),
-                // Properties
-                fcu: parseFloat(document.getElementById('fcu')?.value || 35),
-                fy: parseFloat(document.getElementById('fy')?.value || 500), 
-                b: parseFloat(document.getElementById('b')?.value || 0),
-                h: parseFloat(document.getElementById('h')?.value || 0), 
-                span: parseFloat(document.getElementById('span')?.value || 0),
-                c_nom: parseFloat(document.getElementById('c_nom')?.value || 35),
-                linkDia: parseFloat(document.getElementById('linkDia')?.value || 10),
-                numLinkLegs: parseInt(document.getElementById('numLinkLegs')?.value || 2),
-                linkSpacing: parseFloat(document.getElementById('linkSpacing')?.value || 200),
-                aggSize: parseFloat(document.getElementById('aggSize')?.value || 20),
-                R: parseFloat(document.getElementById('restraintFactor')?.value || 0), 
-                T1: parseFloat(document.getElementById('tempDrop')?.value || 0),
-                supportCondition: supportConditionEl ? supportConditionEl.value : 'simply-supported',
-                includeOverview: document.getElementById('includeOverview').checked
-            };
-            
-            const designCheckResult = runDesignChecks({...inputs}, JSON.parse(JSON.stringify(rebarInputs)));
-            const overall_pass = designCheckResult.pass;
+        function calculate(loadCase, baseInputs, rebarInputs) {
+            const inputs = { ...baseInputs, ...loadCase };
             
             const isHogging = inputs.M >= 0;
             const c_nom = inputs.c_nom;
@@ -846,9 +794,9 @@
             // Calculate centroids and total areas
             let totalTopArea = 0, momentOfTopArea = 0, numTopBars = 0;
             let currentTopDepth = c_nom + inputs.linkDia;
-            topLayers.forEach((layer, index) => {
+            rebarInputs.topLayers.forEach((layer, index) => {
                 if(index > 0) {
-                    const prevLayer = topLayers[index-1];
+                    const prevLayer = rebarInputs.topLayers[index-1];
                     const spacing = Math.max(layer.spacing, prevLayer.dia, inputs.aggSize + 5, 20);
                     currentTopDepth += prevLayer.dia / 2 + spacing + layer.dia / 2;
                 } else {
@@ -862,9 +810,9 @@
 
             let totalBottomArea = 0, momentOfBottomArea = 0, numBottomBars = 0;
             let currentBottomDepth = c_nom + inputs.linkDia;
-             bottomLayers.forEach((layer, index) => {
+             rebarInputs.bottomLayers.forEach((layer, index) => {
                 if(index > 0) {
-                    const prevLayer = bottomLayers[index-1];
+                    const prevLayer = rebarInputs.bottomLayers[index-1];
                     const spacing = Math.max(layer.spacing, prevLayer.dia, inputs.aggSize + 5, 20);
                     currentBottomDepth += prevLayer.dia / 2 + spacing + layer.dia / 2;
                 } else {
@@ -882,8 +830,8 @@
             const d_y = isHogging ? (inputs.h - d_top_centroid) : (inputs.h - d_bottom_centroid_from_bottom);
             const d_prime = isHogging ? d_bottom_centroid_from_bottom : d_top_centroid;
 
-            const topBars = { num: numTopBars, dia: topLayers[0]?.dia || 0, area: totalTopArea, layers: topLayers };
-            const bottomBars = { num: numBottomBars, dia: bottomLayers[0]?.dia || 0, area: totalBottomArea, layers: bottomLayers };
+            const topBars = { num: numTopBars, dia: rebarInputs.topLayers[0]?.dia || 0, area: totalTopArea, layers: rebarInputs.topLayers };
+            const bottomBars = { num: numBottomBars, dia: rebarInputs.bottomLayers[0]?.dia || 0, area: totalBottomArea, layers: rebarInputs.bottomLayers };
             const tensionRebar = isHogging ? topBars : bottomBars;
             const compressionRebar = isHogging ? bottomBars : topBars;
             const As_prov = tensionRebar.area;
@@ -1042,114 +990,168 @@
                 </table>
             `;
 
-            const calcs = { M_eff, c_nom, d_y, d_prime, flexuralCalcs, topBars, bottomBars, As_prov, As_prime_prov, shearCalcsY, shearCalcsX, v_max_limit, torsionalCalcs, combined_Asv_s_req, Asv_s_prov, deflection_check, allowable_ratio, actual_ratio, crack_width_html, failureReason: designCheckResult.reason, finalLinkDia: inputs.linkDia, sv_prov: inputs.linkSpacing, basic_ratio, tensionRebar, compressionRebar };
-            lastCalculation = { inputs, calcs };
+            const flex_ur = As_prov > 0 ? flexuralCalcs.As_req / As_prov : (flexuralCalcs.As_req > 0 ? 999 : 0);
+            const shear_ur = v_max_limit > 0 ? shearCalcsY.v / v_max_limit : (shearCalcsY.v > 0 ? 999 : 0);
+            const deflection_ur = allowable_ratio > 0 ? actual_ratio / allowable_ratio : (actual_ratio > 0 ? 999 : 0);
+            const overall_ur = Math.max(flex_ur, shear_ur, deflection_ur);
 
-            const recommendationDiv = document.getElementById('recommendation-section'), recommendationOutputDiv = document.getElementById('recommendation-output');
-            if(!overall_pass) {
-                recommendationOutputDiv.innerHTML = `Failure Reason: <strong>${designCheckResult.reason}</strong>`;
-                recommendationDiv.style.display = 'block';
-            } else { 
-                recommendationDiv.style.display = 'none'; 
-            }
-
-            generateReport(inputs, calcs);
-        }
-        
-        // --- Gemini API Functions ---
-        async function performAIAction(prompt, buttonId, buttonText) {
-            const btn = document.getElementById(buttonId);
-            const overviewTextarea = document.querySelector('#overview-text');
-            btn.innerHTML = '<div class="loader"></div>';
-            btn.disabled = true;
-
-            try {
-                let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
-                const payload = { contents: chatHistory };
-                const apiKey = ""; // IMPORTANT: Add your Gemini API key here for local use
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-                
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`API Error: ${response.statusText}`);
+            return { 
+                inputs, 
+                calcs: { M_eff, c_nom, d_y, d_prime, flexuralCalcs, topBars, bottomBars, As_prov, As_prime_prov, shearCalcsY, shearCalcsX, v_max_limit, torsionalCalcs, combined_Asv_s_req, Asv_s_prov, deflection_check, allowable_ratio, actual_ratio, crack_width_html, finalLinkDia: inputs.linkDia, sv_prov: inputs.linkSpacing, basic_ratio, tensionRebar, compressionRebar },
+                utilization: {
+                    flex: flex_ur,
+                    shear: shear_ur,
+                    deflection: deflection_ur,
+                    overall: overall_ur
                 }
-                const result = await response.json();
-
-                if (result.candidates && result.candidates[0].content.parts[0].text) {
-                    overviewTextarea.value = result.candidates[0].content.parts[0].text;
-                } else {
-                    overviewTextarea.value = "AI could not generate a response. Please check the console for details.";
-                    console.error("Unexpected API response:", result);
-                }
-            } catch (error) {
-                console.error('Error calling Gemini API:', error);
-                overviewTextarea.value = `Error generating response: ${error.message}. Please try again.`;
-            } finally {
-                btn.innerHTML = buttonText;
-                btn.disabled = false;
-            }
+            };
         }
 
-        async function generateAIRecommendation() {
-            const { inputs, calcs } = lastCalculation;
-            if (!inputs || !calcs || !calcs.failureReason) {
-                alert("No failure detected or report not generated yet.");
+        function runBatchAnalysis() {
+            // 1. Get Base Inputs
+            const supportConditionEl = document.getElementById('supportCondition');
+            const baseInputs = {
+                fcu: parseFloat(document.getElementById('fcu')?.value || 35),
+                fy: parseFloat(document.getElementById('fy')?.value || 500), 
+                b: parseFloat(document.getElementById('b')?.value || 0),
+                h: parseFloat(document.getElementById('h')?.value || 0), 
+                span: parseFloat(document.getElementById('span')?.value || 0),
+                c_nom: parseFloat(document.getElementById('c_nom')?.value || 35),
+                linkDia: parseFloat(document.getElementById('linkDia')?.value || 10),
+                numLinkLegs: parseInt(document.getElementById('numLinkLegs')?.value || 2),
+                linkSpacing: parseFloat(document.getElementById('linkSpacing')?.value || 200),
+                aggSize: parseFloat(document.getElementById('aggSize')?.value || 20),
+                R: parseFloat(document.getElementById('restraintFactor')?.value || 0), 
+                T1: parseFloat(document.getElementById('tempDrop')?.value || 0),
+                supportCondition: supportConditionEl ? supportConditionEl.value : 'simply-supported',
+                includeOverview: document.getElementById('includeOverview').checked
+            };
+
+            // 2. Get Rebar Inputs
+            const topLayers = [], bottomLayers = [];
+            document.querySelectorAll('#top-layers-container tr').forEach((row) => {
+                const num = parseInt(row.querySelector('.num-bars').value) || 0;
+                const dia = parseFloat(row.querySelector('.bar-dia').value) || 0;
+                const spacing = row.querySelector('.clear-spacing') ? (parseFloat(row.querySelector('.clear-spacing').value) || 25) : 25;
+                if(num > 0 && dia > 0) topLayers.push({ num, dia, area: num * barData[dia], spacing });
+            });
+            document.querySelectorAll('#bottom-layers-container tr').forEach((row) => {
+                const num = parseInt(row.querySelector('.num-bars').value) || 0;
+                const dia = parseFloat(row.querySelector('.bar-dia').value) || 0;
+                const spacing = row.querySelector('.clear-spacing') ? (parseFloat(row.querySelector('.clear-spacing').value) || 25) : 25;
+                if(num > 0 && dia > 0) bottomLayers.push({ num, dia, area: num * barData[dia], spacing });
+            });
+            const rebarInputs = { topLayers, bottomLayers };
+
+            // 3. Parse Load Cases from table
+            const rows = document.querySelectorAll('#load-case-tbody tr');
+            const loadCases = [];
+            rows.forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                if (inputs.length === 7) {
+                    loadCases.push({
+                        caseName: inputs[0].value || `Case-${loadCases.length + 1}`,
+                        N: parseFloat(inputs[1].value) || 0,
+                        Vy: parseFloat(inputs[2].value) || 0,
+                        Vx: parseFloat(inputs[3].value) || 0,
+                        M: parseFloat(inputs[4].value) || 0,
+                        T: parseFloat(inputs[5].value) || 0,
+                        M_sls: parseFloat(inputs[6].value) || 0
+                    });
+                }
+            });
+
+
+            if (loadCases.length === 0) {
+                document.getElementById('output-section').innerHTML = '<div class="page-container"><p>Please add at least one load case to the table.</p></div>';
                 return;
             }
-            const btn = document.getElementById('ai-recommend-btn');
-            const outputDiv = document.getElementById('recommendation-output');
-            btn.innerHTML = '<div class="loader"></div> Generating...';
-            btn.disabled = true;
 
-            const prompt = `As a senior structural engineer, a concrete beam design has failed.
-            
-            **Failed Design Inputs:**
-            - Section: ${inputs.b}mm x ${inputs.h}mm
-            - ULS Loads: M=${inputs.M}kNm, Vy=${inputs.Vy}kN
-            - Materials: fcu=${inputs.fcu}, fy=${inputs.fy}
-            - **Failure Reason: ${calcs.failureReason}**
+            // 4. Run calculations for all cases
+            const results = loadCases.map(lc => calculate(lc, baseInputs, rebarInputs));
 
-            Provide a concise, actionable recommendation to fix the design. Suggest specific, practical changes to the beam's dimensions (width 'b' or height 'h') or material grades (fcu). For example: "The section fails in flexure. Consider increasing beam height (h) to 550mm." or "The section fails in shear. Try increasing concrete grade to C40/50 or increasing beam width (b) to 300mm.".
-            `;
-
-            try {
-                let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
-                const payload = { contents: chatHistory };
-                 // IMPORTANT: If running this file locally, you must replace the empty string with your own Gemini API key.
-                const apiKey = "";
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-                
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-                const result = await response.json();
-                
-                if (result.candidates && result.candidates[0].content.parts[0].text) {
-                     outputDiv.innerHTML = `<strong>AI Suggestion:</strong><br>${result.candidates[0].content.parts[0].text.replace(/\*/g, '')}`;
-                } else {
-                    outputDiv.innerHTML = "AI could not generate a recommendation.";
-                    console.error("Unexpected API response:", result);
+            // 5. Find the critical case
+            let criticalCase = results[0];
+            for (let i = 1; i < results.length; i++) {
+                if (results[i].utilization.overall > criticalCase.utilization.overall) {
+                    criticalCase = results[i];
                 }
-
-            } catch(error) {
-                console.error("Error calling Gemini API for recommendation:", error);
-                outputDiv.innerHTML = "Error getting AI suggestion. Please check the console.";
-            } finally {
-                btn.innerHTML = '✨ Ask AI for Suggestion';
-                btn.disabled = false;
             }
+            
+            // 6. Generate Reports
+            const summaryReportHTML = generateSummaryReport(results);
+            const detailedReportHTML = generateDetailedReport(criticalCase.inputs, criticalCase.calcs);
+
+            document.getElementById('output-section').innerHTML = summaryReportHTML + detailedReportHTML;
+        }
+        
+        // --- Report Generation & Rendering ---
+        function generateReportHeader(title, subTitle, designer, checkedBy, date, revision, logoSrc) {
+            return `
+                <div class="report-header">
+                    <div class="logo-container">${logoSrc ? `<img src="${logoSrc}" alt="Company Logo">` : 'Logo'}</div>
+                    <div class="right-content">
+                        <div class="title-container"><h2>${title}</h2><h3>${subTitle}</h3></div>
+                        <div class="info-container">
+                             <div class="info-cell"><p><span>Project No:</span><br>BEAM-001</p></div>
+                             <div class="info-cell"><p><span>Designed By:</span> ${designer}<br><span>Checked By:</span> ${checkedBy}</p></div>
+                             <div class="info-cell"><p><span>Date:</span> ${date}<br><span>Revision:</span> ${revision}</p></div>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
 
-        // --- Report Generation & Rendering ---
-        function generateReport(inputs, calcs) {
+        function generateSummaryReport(results) {
+            const designer = document.getElementById('designerName').value || 'N/A', checkedBy = document.getElementById('checkedBy').value || 'N/A';
+            const title = document.getElementById('projectTitle').value || 'N/A', subTitle = 'Load Case Summary';
+            const date = document.getElementById('reportDate').value || new Date().toISOString().slice(0, 10), revision = document.getElementById('reportRevision').value || 'N/A';
+            const logoInput = document.getElementById('companyLogo').files[0], logoSrc = logoInput ? URL.createObjectURL(logoInput) : '';
+
+            let tableRows = '';
+            results.forEach(res => {
+                const flex_ur = res.utilization.flex;
+                const shear_ur = res.utilization.shear;
+                const defl_ur = res.utilization.deflection;
+
+                tableRows += `
+                    <tr>
+                        <td>${res.inputs.caseName}</td>
+                        <td>${res.inputs.N.toFixed(2)}</td>
+                        <td>${res.inputs.M.toFixed(2)}</td>
+                        <td>${res.inputs.Vy.toFixed(2)}</td>
+                        <td class="${flex_ur > 1.0 ? 'check-fail' : 'check-ok'}">${flex_ur.toFixed(2)}</td>
+                        <td class="${shear_ur > 1.0 ? 'check-fail' : 'check-ok'}">${shear_ur.toFixed(2)}</td>
+                        <td class="${defl_ur > 1.0 ? 'check-fail' : 'check-ok'}">${defl_ur.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            return `
+                <div class="page-container" id="load-case-summary">
+                    ${generateReportHeader(title, subTitle, designer, checkedBy, date, revision, logoSrc)}
+                    <h2>Load Case Summary</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Case</th>
+                                <th>N (kN)</th>
+                                <th>M (kNm)</th>
+                                <th>V<sub>y</sub> (kN)</th>
+                                <th>Flexure U.R.</th>
+                                <th>Shear U.R.</th>
+                                <th>Deflection U.R.</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function generateDetailedReport(inputs, calcs) {
             const { M_eff, c_nom, d_y, d_prime, flexuralCalcs, topBars, bottomBars, As_prov, As_prime_prov, shearCalcsY, shearCalcsX, v_max_limit, torsionalCalcs, combined_Asv_s_req, Asv_s_prov, deflection_check, allowable_ratio, actual_ratio, crack_width_html, finalLinkDia, sv_prov, basic_ratio, tensionRebar, compressionRebar } = calcs;
             const v_res = Math.sqrt(shearCalcsY.v**2 + shearCalcsX.v**2);
 
@@ -1174,20 +1176,38 @@
                     <textarea id="overview-text" placeholder="Enter project overview here..."></textarea>
                 </div>`;
             }
+            
+            const criticalCaseTableHTML = `
+                <h4>Critical Load Case</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Case</th>
+                            <th>N (kN)</th>
+                            <th>V<sub>y</sub> (kN)</th>
+                            <th>V<sub>x</sub> (kN)</th>
+                            <th>M (kNm)</th>
+                            <th>T (kNm)</th>
+                            <th>M<sub>sls</sub> (kNm)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>${inputs.caseName}</td>
+                            <td>${inputs.N.toFixed(2)}</td>
+                            <td>${inputs.Vy.toFixed(2)}</td>
+                            <td>${inputs.Vx.toFixed(2)}</td>
+                            <td>${inputs.M.toFixed(2)}</td>
+                            <td>${inputs.T.toFixed(2)}</td>
+                            <td>${inputs.M_sls.toFixed(2)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
 
             let html = `
             <div class="page-container">
-                <div class="report-header">
-                    <div class="logo-container">${logoSrc ? `<img src="${logoSrc}" alt="Company Logo">` : 'Logo'}</div>
-                    <div class="right-content">
-                        <div class="title-container"><h2>${title}</h2><h3>${subTitle}</h3></div>
-                        <div class="info-container">
-                             <div class="info-cell"><p><span>Project No:</span><br>BEAM-001</p></div>
-                             <div class="info-cell"><p><span>Designed By:</span> ${designer}<br><span>Checked By:</span> ${checkedBy}</p></div>
-                             <div class="info-cell"><p><span>Date:</span> ${date}<br><span>Revision:</span> ${revision}</p></div>
-                        </div>
-                    </div>
-                </div>
+                ${generateReportHeader(title, `${subTitle} (Critical Case: ${inputs.caseName})`, designer, checkedBy, date, revision, logoSrc)}
                 ${overviewHTML}
                 
                 <h2>${sectionCounter++}. Design Check Summary</h2>
@@ -1223,6 +1243,7 @@
                 </table>
                 
                 <h2>${sectionCounter++}. Loading Input</h2>
+                ${criticalCaseTableHTML}
                 <div class="section-with-diagram">
                     <div>
                         <h4>ULS (Factored)</h4>
@@ -1282,30 +1303,31 @@
                 <h2>${sectionCounter++}. Crack Width Check (SLS) <span class="citation">Cl. 7.2</span></h2>
                 ${crack_width_html}
             </div>`;
-            document.getElementById('output-section').innerHTML = html;
+            return html;
         }
 
         window.onload = function() {
             addLayer('top');
             addLayer('bottom');
+            addLoadCaseRow(['LC1', 0, 95.5, 0, 119.4, 0, 80]); // Add a default row
             
             // Setup a single event listener on the panel for efficiency
             const inputsPanel = document.querySelector('.inputs-panel');
             if (inputsPanel) {
                 inputsPanel.addEventListener('change', (event) => {
                     if (event.target.matches('input, select')) {
-                         calculate();
+                         runBatchAnalysis();
                     }
                 });
                 inputsPanel.addEventListener('click', (event) => {
                     if(event.target.classList.contains('remove-layer-btn')) {
-                        removeLayer(event.target);
+                        event.target.closest('tr').remove();
+                        runBatchAnalysis();
                     }
                 });
             }
-             calculate();
+             runBatchAnalysis();
         };
     </script>
 </body>
 </html>
-
