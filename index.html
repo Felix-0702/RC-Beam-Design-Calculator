@@ -468,9 +468,10 @@
 <body>
     <div class="main-container">
         <div class="inputs-panel">
-            <h1>RC Section Design Inputs (v5.8)</h1>
+            <h1>RC Section Design Inputs (v5.9)</h1>
             
             <h2>Batch Load Case Input</h2>
+            <small class="convention">Sign Convention: N (+Comp, -Ten), M (+Hog, -Sag)</small>
             <div class="input-group">
                 <table id="load-case-table">
                     <thead>
@@ -482,6 +483,7 @@
                             <th>M</th>
                             <th>T</th>
                             <th>M_sls</th>
+                            <th>N_sls</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -490,8 +492,8 @@
                     </tbody>
                 </table>
                 <div class="table-button-group">
-                    <button type="button" class="table-button" onclick="addLoadCaseRow()">Add Row</button>
-                    <button type="button" class="table-button" onclick="showPasteModal()">Paste from Spreadsheet</button>
+                    <button type="button" class="table-button" id="add-load-case-btn">Add Row</button>
+                    <button type="button" class="table-button" id="paste-data-btn">Paste from Spreadsheet</button>
                 </div>
             </div>
 
@@ -537,7 +539,7 @@
                     <thead><tr><th>Layer</th><th>No.</th><th>Dia.</th><th>Spacing (mm)</th><th></th></tr></thead>
                     <tbody id="top-layers-container"></tbody>
                 </table>
-                <button class="layer-button" type="button" onclick="addLayer('top')">Add Top Layer</button>
+                <button type="button" class="layer-button" id="add-top-layer-btn">Add Top Layer</button>
             </div>
             <div class="input-group">
                 <label>Bottom Reinforcement</label>
@@ -545,7 +547,7 @@
                      <thead><tr><th>Layer</th><th>No.</th><th>Dia.</th><th>Spacing (mm)</th><th></th></tr></thead>
                     <tbody id="bottom-layers-container"></tbody>
                 </table>
-                <button class="layer-button" type="button" onclick="addLayer('bottom')">Add Bottom Layer</button>
+                <button type="button" class="layer-button" id="add-bottom-layer-btn">Add Bottom Layer</button>
             </div>
              <div class="input-group">
                 <label for="aggSize">Nominal Max Aggregate Size (mm)</label>
@@ -586,15 +588,16 @@
                 <label for="includeOverview">Include Overview Section</label>
              </div>
             
-            <button id="calc-btn" onclick="runBatchAnalysis()">Analyze & Verify Design</button>
-            <button id="print-btn" onclick="window.print()">Print to PDF</button>
+            <button id="calc-btn">Analyze & Verify Design</button>
+            <button id="print-btn">Print to PDF</button>
             
             <div class="version-notes">
-                <strong>Notes on V5.8 Update:</strong>
+                <strong>Notes on V5.9 Update:</strong>
                 <ul>
                     <li>Replaced batch text input with an interactive table.</li>
                     <li>Added a "Paste from Spreadsheet" feature to populate the table.</li>
                     <li>Print styles have been further refined for better layout and readability.</li>
+                    <li>Added SLS axial load input for more accurate crack width calculations.</li>
                 </ul>
             </div>
         </div>
@@ -605,11 +608,11 @@
     <div id="paste-modal" class="modal-overlay" style="display:none;">
         <div class="modal-content">
             <h3>Paste from Spreadsheet</h3>
-            <p>Paste your data below. Data should be tab-separated (copied from Excel/Sheets) and have the following columns: Case, N, Vy, Vx, M, T, M_sls.</p>
+            <p>Paste your data below. Data should be tab-separated (copied from Excel/Sheets) and have the following columns: Case, N, Vy, Vx, M, T, M_sls, N_sls.</p>
             <textarea id="spreadsheet-data"></textarea>
             <div class="table-button-group">
-                <button onclick="processPastedData()" class="table-button">Process Data</button>
-                <button onclick="hidePasteModal()" class="table-button" style="background-color: var(--danger-color);">Cancel</button>
+                <button type="button" id="process-paste-btn" class="table-button">Process Data</button>
+                <button type="button" id="cancel-paste-btn" class="table-button" style="background-color: var(--danger-color);">Cancel</button>
             </div>
         </div>
     </div>
@@ -675,59 +678,6 @@
             return svgString;
         }
 
-        function generateLoadingDiagramSVG() {
-            const svgWidth = 300;
-            const svgHeight = 350;
-            const midX = svgWidth / 2;
-            const midY = svgHeight / 2 + 30;
-
-            // Use fixed dimensions for the beam representation
-            const beamWidth = 100;
-            const beamHeight = 150;
-            const perspective = 30;
-
-            const frontX = midX - beamWidth / 2;
-            const frontY = midY - beamHeight / 2;
-
-            const axisColor = "#0d47a1";
-            const loadColor = "#c2410c";
-            const beamStroke = "#333";
-            const beamFill = "#f0f0f0";
-
-            let svgString = `<svg viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto;">`;
-            
-            svgString += `<defs>
-                            <marker id="load-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="${loadColor}" /></marker>
-                            <marker id="axis-arrow-svg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="${axisColor}" /></marker>
-                         </defs>`;
-
-            svgString += `<g stroke="${beamStroke}" stroke-width="2" fill="${beamFill}">
-                    <polygon points="${frontX},${frontY} ${frontX + perspective},${frontY - perspective} ${frontX + beamWidth + perspective},${frontY - perspective} ${frontX + beamWidth},${frontY}" />
-                    <polygon points="${frontX + beamWidth},${frontY} ${frontX + beamWidth + perspective},${frontY - perspective} ${frontX + beamWidth + perspective},${frontY + beamHeight - perspective} ${frontX + beamWidth},${frontY + beamHeight}" />
-                    <rect x="${frontX}" y="${frontY}" width="${beamWidth}" height="${beamHeight}" fill="${beamFill}" />
-                 </g>`;
-
-            const originX = frontX;
-            const originY = frontY + beamHeight;
-            svgString += `<g stroke-width="1.5" marker-end="url(#axis-arrow-svg)">
-                    <line x1="${originX}" y1="${originY}" x2="${originX + 80}" y2="${originY}" stroke="${axisColor}" /><text x="${originX + 85}" y="${originY + 5}" fill="${axisColor}" font-weight="bold">X</text>
-                    <line x1="${originX}" y1="${originY}" x2="${originX}" y2="${originY - 80}" stroke="${axisColor}" /><text x="${originX - 15}" y="${originY - 80}" fill="${axisColor}" font-weight="bold">Y</text>
-                    <line x1="${originX}" y1="${originY}" x2="${originX - 40}" y2="${originY + 40}" stroke="${axisColor}" /><text x="${originX - 50}" y="${originY + 50}" fill="${axisColor}" font-weight="bold">Z</text>
-                 </g>`;
-            
-            const beamMidX = frontX + beamWidth / 2;
-            const beamMidY = frontY + beamHeight / 2;
-
-            svgString += `<line x1="${beamMidX - 40}" y1="${beamMidY + 40}" x2="${beamMidX}" y2="${beamMidY}" stroke="${loadColor}" stroke-width="2" marker-start="url(#load-arrow)"/><text x="${beamMidX - 55}" y="${beamMidY + 55}" font-size="14" fill="${loadColor}" font-weight="bold">N</text>`;
-            svgString += `<line x1="${frontX + beamWidth + 20}" y1="${beamMidY + 30}" x2="${frontX + beamWidth + 20}" y2="${beamMidY}" stroke="${loadColor}" stroke-width="2" marker-end="url(#load-arrow)"/><text x="${frontX + beamWidth + 25}" y="${beamMidY + 15}" font-size="14" fill="${loadColor}" font-weight="bold">V_y</text>`;
-            svgString += `<line x1="${beamMidX - 30}" y1="${frontY - 20}" x2="${beamMidX}" y2="${frontY - 20}" stroke="${loadColor}" stroke-width="2" marker-start="url(#load-arrow)"/><text x="${beamMidX - 15}" y="${frontY - 25}" text-anchor="end" font-size="14" fill="${loadColor}" font-weight="bold">V_x</text>`;
-            svgString += `<path d="M ${beamMidX - 50} ${originY} A 20 20 0 1 0 ${beamMidX - 35} ${originY - 15}" fill="none" stroke="${loadColor}" stroke-width="2" marker-start="url(#load-arrow)" /><text x="${beamMidX - 75}" y="${originY + 10}" font-size="14" fill="${loadColor}" font-weight="bold">M</text>`;
-            svgString += `<path d="M ${beamMidX - 25} ${beamMidY - 35} A 25 25 0 1 1 ${beamMidX + 25} ${beamMidY - 35}" fill="none" stroke="${loadColor}" stroke-width="2" stroke-dasharray="4,4" marker-start="url(#load-arrow)"/><text x="${beamMidX + 30}" y="${beamMidY - 40}" font-size="14" fill="${loadColor}" font-weight="bold">T</text>`;
-
-            svgString += `</svg>`;
-            return svgString;
-        }
-
         function addLayer(type) {
             const container = document.getElementById(`${type}-layers-container`);
             const newRow = container.insertRow();
@@ -740,7 +690,7 @@
                         <option value="8">8</option><option value="10">10</option><option value="12">12</option><option value="16" ${layerNum === 1 && type==='top' ? 'selected' : ''}>16</option><option value="20">20</option><option value="25" ${layerNum === 1 && type==='bottom' ? 'selected' : ''}>25</option><option value="32">32</option><option value="40">40</option><option value="50">50</option>
                     </select></td>
                 <td>${layerNum > 1 ? '<input type="number" class="clear-spacing" value="25">' : 'N/A'}</td>
-                <td><button type="button" class="remove-layer-btn" onclick="this.closest('tr').remove()">X</button></td>
+                <td><button type="button" class="remove-layer-btn">X</button></td>
             `;
         }
         
@@ -755,7 +705,8 @@
                 <td><input type="number" value="${data[4] || 0}"></td>
                 <td><input type="number" value="${data[5] || 0}"></td>
                 <td><input type="number" value="${data[6] || 0}"></td>
-                <td><button type="button" class="remove-layer-btn" onclick="this.closest('tr').remove()">X</button></td>
+                <td><input type="number" value="${data[7] || 0}"></td>
+                <td><button type="button" class="remove-layer-btn">X</button></td>
             `;
         }
         
@@ -775,11 +726,12 @@
 
             lines.forEach(line => {
                 const parts = line.split(/\t/); // Split by tab for Excel/Sheets
-                if (parts.length >= 7) {
+                if (parts.length >= 8) {
                     addLoadCaseRow(parts);
                 }
             });
             hidePasteModal();
+            runBatchAnalysis(); // Trigger analysis once after all rows are added
         }
 
 
@@ -930,8 +882,11 @@
             const As_prime_prov_sls = compressionRebar_sls.area;
             const d_y_sls = isHogging_sls ? (inputs.h - d_top_centroid) : (inputs.h - d_bottom_centroid_from_bottom);
             const d_prime_sls = isHogging_sls ? d_bottom_centroid_from_bottom : d_top_centroid;
+            
+            // Effective SLS moment including axial load
+            const M_sls_eff = M_sls * 1e6 + inputs.N_sls * 1e3 * (inputs.h/2 - d_y_sls);
 
-            if (M_sls > 0 && As_prov_sls > 0) {
+            if (M_sls_eff > 0 && As_prov_sls > 0) {
                  // Cracked section analysis for SLS
                 const alpha_e = 15; // Modular ratio, common assumption
                 const A = 0.5 * inputs.b;
@@ -945,7 +900,7 @@
                 const z_sls = d_y_sls - x_sls / 3;
                 
                 // Steel stress under SLS moment
-                fs_crack = (M_sls * 1e6) / (As_prov_sls * z_sls);
+                fs_crack = (M_sls_eff) / (As_prov_sls * z_sls);
 
                 const tensionBarDiaValue = tensionRebar_sls.layers[0]?.dia || 0;
                 const c_min = c_nom + inputs.linkDia;
@@ -971,7 +926,7 @@
                  ${!deflection_check ? `
                 <h4>Flexural Crack Calculation <span class="citation">Cl. 7.2.3</span></h4>
                 <table>
-                    <tr><td>Service Steel Stress, f<sub>s</sub></td><td class="formula">M<sub>sls</sub> / (A<sub>s,prov</sub>&middot;z<sub>sls</sub>)</td><td>${fs_crack.toFixed(1)} N/mm²</td></tr>
+                    <tr><td>Service Steel Stress, f<sub>s</sub></td><td class="formula">M<sub>sls,eff</sub> / (A<sub>s,prov</sub>&middot;z<sub>sls</sub>)</td><td>${fs_crack.toFixed(1)} N/mm²</td></tr>
                     <tr><td>Distance to corner of bar, a<sub>cr</sub></td><td>Calculated from geometry</td><td>${acr_flexural.toFixed(1)} mm</td></tr>
                     <tr><td>Average Strain, &epsilon;<sub>m</sub></td><td class="formula">&epsilon;<sub>1</sub> - f(b<sub>t</sub>,h,x,E<sub>s</sub>,A<sub>s</sub>,d)</td><td>${eps_m.toExponential(2)}</td></tr>
                     <tr><td>Calculated Flexural Crack Width, w<sub>k,flex</sub></td><td class="formula">3a<sub>cr</sub>&epsilon;<sub>m</sub> / (1+...)</td><td>${w_k_flexural.toFixed(3)} mm</td></tr>
@@ -1048,7 +1003,7 @@
             const loadCases = [];
             rows.forEach(row => {
                 const inputs = row.querySelectorAll('input');
-                if (inputs.length === 7) {
+                if (inputs.length === 8) {
                     loadCases.push({
                         caseName: inputs[0].value || `Case-${loadCases.length + 1}`,
                         N: parseFloat(inputs[1].value) || 0,
@@ -1056,7 +1011,8 @@
                         Vx: parseFloat(inputs[3].value) || 0,
                         M: parseFloat(inputs[4].value) || 0,
                         T: parseFloat(inputs[5].value) || 0,
-                        M_sls: parseFloat(inputs[6].value) || 0
+                        M_sls: parseFloat(inputs[6].value) || 0,
+                        N_sls: parseFloat(inputs[7].value) || 0
                     });
                 }
             });
@@ -1178,28 +1134,28 @@
             }
             
             const criticalCaseTableHTML = `
-                <h4>Critical Load Case</h4>
+                <h4>Critical Load Case: ${inputs.caseName}</h4>
                 <table>
                     <thead>
                         <tr>
-                            <th>Case</th>
                             <th>N (kN)</th>
                             <th>V<sub>y</sub> (kN)</th>
                             <th>V<sub>x</sub> (kN)</th>
                             <th>M (kNm)</th>
                             <th>T (kNm)</th>
                             <th>M<sub>sls</sub> (kNm)</th>
+                            <th>N<sub>sls</sub> (kN)</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>${inputs.caseName}</td>
                             <td>${inputs.N.toFixed(2)}</td>
                             <td>${inputs.Vy.toFixed(2)}</td>
                             <td>${inputs.Vx.toFixed(2)}</td>
                             <td>${inputs.M.toFixed(2)}</td>
                             <td>${inputs.T.toFixed(2)}</td>
                             <td>${inputs.M_sls.toFixed(2)}</td>
+                            <td>${inputs.N_sls.toFixed(2)}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -1244,18 +1200,6 @@
                 
                 <h2>${sectionCounter++}. Loading Input</h2>
                 ${criticalCaseTableHTML}
-                <div class="section-with-diagram">
-                    <div>
-                        <h4>ULS (Factored)</h4>
-                        <table><tr><th>Load Type</th><th>Value</th><th>Notes</th></tr><tr><td>Axial Load, N</td><td>${inputs.N} kN</td><td>+ve Comp, -ve Ten</td></tr><tr><td>Shear Force, V<sub>y</sub></td><td>${inputs.Vy} kN</td><td>Major Axis</td></tr><tr><td>Shear Force, V<sub>x</sub></td><td>${inputs.Vx} kN</td><td>Minor Axis</td></tr><tr><td>Bending Moment, M</td><td>${inputs.M} kNm</td><td>+ve Hogging, -ve Sagging</td></tr><tr><td>Torsion, T</td><td>${inputs.T} kNm</td><td></td></tr></table>
-                        <h4>SLS (Unfactored)</h4>
-                        <table><tr><th>Load Type</th><th>Value</th><th>Notes</th></tr><tr><td>Bending Moment, M<sub>sls</sub></td><td>${inputs.M_sls} kNm</td><td>For Crack/Deflection</td></tr></table>
-                    </div>
-                    <div class="beam-sketch">
-                        ${generateLoadingDiagramSVG()}
-                        <h3>Loading Diagram</h3>
-                    </div>
-                </div>
 
                 <h2>${sectionCounter++}. Flexural Design (ULS) <span class="citation">Cl. 6.1.2</span></h2>
                 <table><tr><td>Design Moment, M<sub>eff</sub></td><td>Adjusted for axial load</td><td>${M_eff > 0 ? (M_eff / 1e6).toFixed(2) : "N/A"} kNm</td></tr><tr><td>K</td><td class="formula">M<sub>eff</sub> / (b&middot;d²&middot;f<sub>cu</sub>)</td><td>${flexuralCalcs.K.toFixed(3)}</td></tr><tr><td>K' Limit</td><td>For f<sub>cu</sub>=${inputs.fcu} N/mm²</td><td>${flexuralCalcs.K_prime.toFixed(3)} <span class="citation">Cl 6.1.2.4(b)</span></td></tr>
@@ -1309,24 +1253,61 @@
         window.onload = function() {
             addLayer('top');
             addLayer('bottom');
-            addLoadCaseRow(['LC1', 0, 95.5, 0, 119.4, 0, 80]); // Add a default row
+            addLoadCaseRow(['LC1', 0, 95.5, 0, 119.4, 0, 80, 0]); // Add a default row
             
-            // Setup a single event listener on the panel for efficiency
+            // Setup a single event listener for the entire document for better performance and handling of dynamic elements
+            document.body.addEventListener('click', (event) => {
+                const target = event.target;
+
+                if (target.id === 'add-load-case-btn') {
+                    addLoadCaseRow();
+                    runBatchAnalysis();
+                } 
+                else if (target.id === 'paste-data-btn') {
+                    showPasteModal();
+                }
+                else if (target.id === 'process-paste-btn') {
+                    processPastedData();
+                }
+                else if (target.id === 'cancel-paste-btn') {
+                    hidePasteModal();
+                }
+                else if (target.id === 'add-top-layer-btn') {
+                    addLayer('top');
+                    runBatchAnalysis();
+                }
+                else if (target.id === 'add-bottom-layer-btn') {
+                    addLayer('bottom');
+                    runBatchAnalysis();
+                }
+                else if (target.classList.contains('remove-layer-btn')) {
+                    target.closest('tr').remove();
+                    runBatchAnalysis();
+                }
+                else if (target.id === 'calc-btn') {
+                    runBatchAnalysis();
+                }
+                else if (target.id === 'print-btn') {
+                    window.print();
+                }
+            });
+
+            // Add change/input listeners for automatic updates on the entire input panel
             const inputsPanel = document.querySelector('.inputs-panel');
             if (inputsPanel) {
-                inputsPanel.addEventListener('change', (event) => {
-                    if (event.target.matches('input, select')) {
+                inputsPanel.addEventListener('input', (event) => {
+                    if (event.target.matches('input')) {
                          runBatchAnalysis();
                     }
                 });
-                inputsPanel.addEventListener('click', (event) => {
-                    if(event.target.classList.contains('remove-layer-btn')) {
-                        event.target.closest('tr').remove();
-                        runBatchAnalysis();
+                inputsPanel.addEventListener('change', (event) => {
+                    if (event.target.matches('select')) {
+                         runBatchAnalysis();
                     }
                 });
             }
-             runBatchAnalysis();
+             
+             runBatchAnalysis(); // Initial run on page load
         };
     </script>
 </body>
