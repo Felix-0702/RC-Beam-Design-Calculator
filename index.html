@@ -468,7 +468,7 @@
 <body>
     <div class="main-container">
         <div class="inputs-panel">
-            <h1>RC Section Design Inputs (v5.9)</h1>
+            <h1>RC Section Design Inputs (v6.0)</h1>
             
             <h2>Batch Load Case Input</h2>
             <small class="convention">Sign Convention: N (+Comp, -Ten), M (+Hog, -Sag)</small>
@@ -592,7 +592,7 @@
             <button id="print-btn">Print to PDF</button>
             
             <div class="version-notes">
-                <strong>Notes on V5.9 Update:</strong>
+                <strong>Notes on V5.8 Update:</strong>
                 <ul>
                     <li>Replaced batch text input with an interactive table.</li>
                     <li>Added a "Paste from Spreadsheet" feature to populate the table.</li>
@@ -725,7 +725,7 @@
             tableBody.innerHTML = ''; // Clear existing rows
 
             lines.forEach(line => {
-                const parts = line.split(/\t/); // Split by tab for Excel/Sheets
+                const parts = line.split(/[\s,;\t]+/); // Use a flexible regex for splitting
                 if (parts.length >= 8) {
                     addLoadCaseRow(parts);
                 }
@@ -818,13 +818,14 @@
             const vc_multiplier = (inputs.fcu > 25) ? Math.pow(inputs.fcu / 25, 1/3) : 1.0;
             const rho_l = As_prov > 0 ? Math.min(As_prov / (inputs.b * d_y), 0.03) : 0; // rho_l should not be taken > 3%
             
+            const vy = inputs.Vy * 1e3 / (inputs.b * d_y);
             let vcy_base = (rho_l > 0) ? (0.79 * Math.pow(rho_l * 100, 1/3) * Math.pow(400/d_y, 1/4) / 1.25) * vc_multiplier : 0;
             if (inputs.N !== 0 && M_abs > 0) {
                  vcy_base += 0.6 * (inputs.N * 1000 * d_y) / (M_abs * 1e6) * (vy * 1e3 / (inputs.b * d_y));
             }
             const vcy = Math.max(vcy_base, 0.4); // vc should not be less than vr
             const vry = (inputs.fcu <= 40) ? 0.4 : 0.4 * Math.pow(inputs.fcu / 40, 2/3);
-            const vy = inputs.Vy * 1e3 / (inputs.b * d_y);
+            
             let Asv_y_s_req = (vy < 0.5 * vcy) ? vry * inputs.b / (0.87 * inputs.fy) : (vy - vcy) * inputs.b / (0.87 * inputs.fy);
             if (vy < (vcy + vry) && vy > 0.5 * vcy) {
                  Asv_y_s_req = vry * inputs.b / (0.87 * inputs.fy);
