@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RC Section Design Report Generator (HK CoP 2013) - Revised</title>
+    <title>RC Section Design Report Generator (HK CoP 2013) - v6.0</title>
     <style>
-        /* * Professional Engineering Report Stylesheet
-         * - Uses CSS variables for theming.
-         * - Two-column layout for interactive use.
-         * - Single-column, continuous layout for printing.
-         * - Includes specific styles for report headers.
+        /* * Professional Engineering Report Stylesheet v6.0
+         * - Implemented accordions for organized input.
+         * - Enhanced visual feedback with utilization bars.
+         * - Interactive summary report for detailed case review.
+         * - Refined aesthetics with modern button styles and layout.
+         * - Added Local Storage for data persistence.
          */
         :root {
             --primary-color: #0d47a1; /* Professional blue */
@@ -20,6 +21,7 @@
             --success-color: #16a34a;
             --danger-color: #dc2626;
             --warning-color: #f59e0b;
+            --info-color: #3b82f6;
         }
 
         body {
@@ -28,41 +30,42 @@
             color: var(--text-color);
             margin: 0;
             background-color: #f8fafc;
-            font-size: 14px; /* Increased base font size for better readability */
+            font-size: 14px;
         }
 
-        .page-container {
-            width: 210mm;
-            margin: 20px auto;
-            padding: 15mm;
-            background: white;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
-            box-sizing: border-box;
-            position: relative;
-        }
-        
         .main-container {
             display: flex;
             flex-wrap: wrap;
             gap: 20px;
-            max-width: 1800px; /* Increased max-width */
+            max-width: 1800px;
             padding: 20px;
             margin: auto;
         }
 
         .inputs-panel {
-            flex: 1.5; /* Increased flex-grow for wider panel */
-            min-width: 450px; /* Set a minimum width */
+            flex: 1.5;
+            min-width: 450px;
             padding: 20px;
             border-radius: 8px;
-            background-color: var(--secondary-color);
+            background-color: #fff;
             border: 1px solid var(--border-color);
             align-self: flex-start;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .report-panel {
+            flex: 2;
+            min-width: 800px;
         }
 
-        .report-panel {
-            flex: 2; /* Adjusted flex-grow */
-            min-width: 800px;
+        .page-container {
+            width: 210mm;
+            margin: 0 auto 20px auto;
+            padding: 15mm;
+            background: white;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+            position: relative;
         }
 
         h1, h2, h3, h4 {
@@ -82,7 +85,7 @@
             margin-top: 15px; 
             border-bottom: 2px solid var(--primary-color);
             padding-bottom: 6px;
-            font-size: 1.2rem; /* Adjusted font size */
+            font-size: 1.2rem;
             font-weight: bold;
         }
         
@@ -90,50 +93,56 @@
              margin-top: 10px; 
              border-bottom: 1px solid #94a3b8;
              padding-bottom: 4px;
-             font-size: 1.1rem; /* Adjusted font size */
+             font-size: 1.1rem;
              font-weight: bold;
         }
 
         h4 {
-            font-size: 1rem; /* Adjusted font size */
+            font-size: 1rem;
             color: #334155;
             border-bottom: none;
         }
         
-        .section-with-diagram {
-             display: grid;
-            grid-template-columns: 1.5fr 1fr;
-            gap: 20px;
-            align-items: center;
+        /* Accordion Styles */
+        details {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 10px;
+            background-color: var(--secondary-color);
         }
-
-        .input-group {
-            margin-bottom: 16px;
+        details[open] {
+            background-color: #fff;
         }
-        
-        .input-group.checkbox-group {
-            display: flex;
-            align-items: center;
-        }
-
-        .input-group.checkbox-group input {
-            width: auto;
-            margin-right: 10px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 6px;
+        summary {
             font-weight: 600;
-            font-size: 0.9rem;
+            cursor: pointer;
+            padding: 12px;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        
-        label .convention {
-            font-weight: normal;
-            font-style: italic;
-            color: #475569;
-            font-size: 0.8rem;
+        summary::-webkit-details-marker { display: none; }
+        summary::after {
+            content: '+';
+            font-size: 1.5em;
+            color: var(--primary-color);
+            transition: transform 0.2s;
         }
+        details[open] summary::after {
+            content: '−';
+            transform: rotate(180deg);
+        }
+        .accordion-content {
+            padding: 0 15px 15px 15px;
+        }
+
+        .input-group { margin-bottom: 16px; }
+        .input-group.checkbox-group { display: flex; align-items: center; }
+        .input-group.checkbox-group input { width: auto; margin-right: 10px; }
+
+        label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem; }
+        label .convention { font-weight: normal; font-style: italic; color: #475569; font-size: 0.8rem; }
 
         input, select, textarea {
             width: 100%;
@@ -144,30 +153,16 @@
             font-size: 1rem;
         }
         
-        .rebar-table input, .rebar-table select {
-            padding: 4px;
-            font-size: 0.9rem;
-        }
-        
-        #load-case-table input {
+        .rebar-table input, .rebar-table select, #load-case-table input {
             padding: 4px;
             font-size: 0.9rem;
             border: 1px solid #e2e8f0;
         }
-        #load-case-table th {
-            font-size: 0.8rem;
-        }
+        #load-case-table th { font-size: 0.8rem; }
 
-        .rebar-table td:first-child {
-            font-weight: bold;
-            text-align: center;
-        }
+        .rebar-table td:first-child { font-weight: bold; text-align: center; }
         
-        textarea#spreadsheet-data {
-            min-height: 150px;
-            font-family: monospace;
-            font-size: 0.9rem;
-        }
+        textarea#spreadsheet-data { min-height: 150px; font-family: monospace; font-size: 0.9rem; }
 
         button {
             width: 100%;
@@ -175,28 +170,26 @@
             background-color: var(--primary-color);
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 16px;
             margin-top: 10px;
-            transition: background-color 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            filter: brightness(1.1);
         }
 
-        button.ai-button, button.layer-button, button.table-button {
-             background-color: var(--warning-color);
+        button.table-button {
+             background-color: var(--info-color);
              font-size: 14px;
              padding: 8px;
              margin-top: 4px;
         }
-
-        .table-button-group {
-            display: flex;
-            gap: 10px;
-        }
+        
+        .table-button-group { display: flex; gap: 10px; }
         
         button.remove-layer-btn {
             background-color: var(--danger-color);
@@ -208,259 +201,81 @@
             line-height: 1;
         }
         
-        #print-btn {
-            background-color: var(--success-color);
-        }
+        #print-btn { background-color: var(--success-color); }
+        #reset-btn { background-color: var(--danger-color); }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            font-size: 14px; /* Adjusted font size */
-        }
-
-        th, td {
-            border: 1px solid var(--border-color);
-            padding: 6px 8px;
-            text-align: left;
-            vertical-align: middle;
-        }
-
-        th {
-            background-color: var(--header-bg);
-            font-weight: 600;
-        }
-
-        tr:nth-child(even) {
-            background-color: #f8fafc;
-        }
-
-        .formula {
-            font-style: italic;
-            color: #475569;
-            font-family: "Courier New", Courier, monospace;
-            font-size: 0.9em;
-        }
-
-        .citation {
-            font-size: 0.8em;
-            color: #0ea5e9;
-            font-weight: bold;
-            margin-left: 10px;
-            font-style: italic;
-        }
-
-        .design-summary-container {
-            display: grid;
-            grid-template-columns: 1.5fr 1fr;
-            gap: 20px;
-            align-items: flex-start;
-        }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        th, td { border: 1px solid var(--border-color); padding: 6px 8px; text-align: left; vertical-align: middle; }
+        th { background-color: var(--header-bg); font-weight: 600; }
+        tr:nth-child(even) { background-color: #f8fafc; }
         
-        .summary-card-container {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+        #load-case-summary tbody tr { cursor: pointer; }
+        #load-case-summary tbody tr:hover { background-color: #e3f2fd; }
+        #load-case-summary tbody tr.critical { background-color: #fffbe6; font-weight: bold; }
+        
+        .utilization-bar {
+            width: 100%;
+            height: 10px;
+            background-color: #e2e8f0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .utilization-bar-inner {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.3s;
         }
 
-        .summary-card {
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 10px 15px;
-            height: 100%;
-            box-sizing: border-box;
-        }
-        .summary-card p {
-            margin: 6px 0;
-        }
+        .citation { font-size: 0.8em; color: #0ea5e9; font-weight: bold; margin-left: 10px; font-style: italic; }
+
+        .design-summary-container { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; align-items: flex-start; }
+        .summary-card-container { display: flex; flex-direction: column; gap: 15px; }
+        .summary-card { border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 15px; height: 100%; box-sizing: border-box; }
+        .summary-card p { margin: 6px 0; }
 
         .final-rebar { font-weight: bold; color: #c2410c; }
         .check-ok { color: var(--success-color); font-weight: bold; }
         .check-fail { color: var(--danger-color); font-weight: bold; }
 
         .beam-sketch { text-align: center; max-width: 350px; margin: auto; }
-        .beam-sketch svg {
-            border: 1px solid var(--border-color);
-            width: 100%;
-            height: auto;
-            background-color: #fff;
-        }
-        .beam-sketch h3 {
-            font-size: 14px;
-            margin-top: 10px;
-            border: none;
-            color: var(--text-color);
-        }
+        .beam-sketch svg { border: 1px solid var(--border-color); width: 100%; height: auto; background-color: #fff; }
+        .beam-sketch h3 { font-size: 14px; margin-top: 10px; border: none; color: var(--text-color); }
         
-        /* Report Header Styles */
-        .report-header {
-            display: grid;
-            grid-template-columns: 1.2fr 4fr; /* Logo | Right Side */
-            border: 2px solid black;
-            margin-bottom: 15px;
-        }
-        .report-header .logo-container {
-            border-right: 2px solid black;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 5px;
-            min-height: 80px;
-        }
-        .report-header .logo-container img {
-            max-width: 120px;
-            max-height: 80px;
-            object-fit: contain;
-        }
-        .report-header .right-content {
-             display: grid;
-             grid-template-rows: 1fr 1fr;
-        }
-        .report-header .title-container {
-            border-bottom: 2px solid black;
-            text-align: center;
-            padding: 5px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-         .report-header .title-container h2 {
-            font-size: 18px;
-            font-weight: bold;
-            border: none;
-            padding: 0;
-            margin: 0;
-        }
-         .report-header .title-container h3 {
-             font-size: 16px;
-             font-weight: bold;
-             border: none;
-             padding: 0;
-             margin: 0;
-        }
-        .report-header .info-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-        }
-        .report-header .info-cell {
-            padding: 5px 10px;
-            border-left: 2px solid black;
-            font-size: 12px;
-        }
-        .report-header .info-cell:first-child {
-            border-left: none;
-        }
-        .report-header .info-cell p {
-            margin: 2px 0;
-        }
-        .report-header .info-cell span {
-            font-weight: bold;
-        }
-
-        #recommendation-section {
-            display: none; /* Initially hidden */
-            margin-top: 20px;
-            padding: 15px;
-            border: 2px dashed var(--warning-color);
-            background-color: #fefce8;
-            border-radius: 8px;
-        }
-         #recommendation-section h2 {
-             color: var(--warning-color);
-             border-bottom-color: var(--warning-color);
-        }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            width: 16px;
-            height: 16px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        .report-header { display: grid; grid-template-columns: 1.2fr 4fr; border: 2px solid black; margin-bottom: 15px; }
+        .report-header .logo-container { border-right: 2px solid black; display: flex; align-items: center; justify-content: center; padding: 5px; min-height: 80px; }
+        .report-header .logo-container img { max-width: 120px; max-height: 80px; object-fit: contain; }
+        .report-header .right-content { display: grid; grid-template-rows: 1fr 1fr; }
+        .report-header .title-container { border-bottom: 2px solid black; text-align: center; padding: 5px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .report-header .title-container h2 { font-size: 18px; font-weight: bold; border: none; padding: 0; margin: 0; }
+        .report-header .title-container h3 { font-size: 16px; font-weight: bold; border: none; padding: 0; margin: 0; }
+        .report-header .info-container { display: grid; grid-template-columns: repeat(3, 1fr); }
+        .report-header .info-cell { padding: 5px 10px; border-left: 2px solid black; font-size: 12px; }
+        .report-header .info-cell:first-child { border-left: none; }
+        .report-header .info-cell p { margin: 2px 0; }
+        .report-header .info-cell span { font-weight: bold; }
         
-        .version-notes {
-            margin-top: 20px;
-            padding: 10px;
-            font-size: 0.8rem;
-            color: #01579b; /* Darker blue text */
-            background-color: #e3f2fd; /* Light blue background */
-            border-radius: 4px;
-            border: 1px solid #90caf9; /* Softer blue border */
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 600px; }
+        .modal-content textarea { height: 200px; }
         
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .modal-content {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 600px;
-        }
-        .modal-content textarea {
-            height: 200px;
-        }
+        .version-notes { margin-top: 20px; padding: 10px; font-size: 0.8rem; color: #01579b; background-color: #e3f2fd; border-radius: 4px; border: 1px solid #90caf9; }
 
         /* Print-specific styles */
         @media print {
-            body {
-                background-color: #fff;
-                font-size: 12px; /* Set base font size to 12px for print */
-                line-height: 1.4; /* Adjust line height for readability */
-            }
+            body { background-color: #fff; font-size: 12px; line-height: 1.4; }
             .main-container { display: block; padding: 0; }
             .inputs-panel { display: none; }
             .report-panel { width: 100%; }
-            .page-container {
-                width: calc(100% - 50px); /* Adjust width for margins */
-                box-shadow: none;
-                border: none;
-                margin: 20px 20px 20px 30px; /* Top, Right, Bottom, Left */
-                padding: 0; /* Remove padding to use margins for spacing */
-                page-break-after: always; /* Ensure each .page-container is on a new page */
-            }
-            .page-container:last-child {
-                page-break-after: auto;
-            }
-
-            h2, h3 { 
-                page-break-after: avoid; 
-                margin-top: 10px; /* Adjust heading margins */
-                padding-bottom: 4px;
-            }
-            h2 { font-size: 16px; } /* Title font size */
-            h3 { font-size: 14px; } /* Sub-title font size */
-            table { 
-                font-size: 11px; /* Adjust table font size relative to body */
-                margin-top: 8px;
-            }
-            th, td {
-                padding: 4px 5px; /* Adjust cell padding */
-            }
-            .summary-card p {
-                margin: 5px 0; 
-            }
-            .design-summary-container, .section-with-diagram {
-                gap: 15px; 
-            }
-            .beam-sketch {
-                max-width: 280px; 
-            }
+            .page-container { width: calc(100% - 50px); box-shadow: none; border: none; margin: 20px 20px 20px 30px; padding: 0; page-break-after: always; }
+            .page-container:last-child { page-break-after: auto; }
+            h2, h3 { page-break-after: avoid; margin-top: 10px; padding-bottom: 4px; }
+            h2 { font-size: 16px; }
+            h3 { font-size: 14px; }
+            table { font-size: 11px; margin-top: 8px; }
+            th, td { padding: 4px 5px; }
+            .summary-card p { margin: 5px 0; }
+            .design-summary-container, .section-with-diagram { gap: 15px; }
+            .beam-sketch { max-width: 280px; }
             table, .design-summary-container, .section-with-diagram, #load-case-summary { page-break-inside: avoid; }
         }
     </style>
@@ -470,134 +285,90 @@
         <div class="inputs-panel">
             <h1>RC Section Design Inputs (v6.0)</h1>
             
-            <h2>Batch Load Case Input</h2>
-            <small class="convention">Sign Convention: N (+Comp, -Ten), M (+Hog, -Sag)</small>
-            <div class="input-group">
-                <table id="load-case-table">
-                    <thead>
-                        <tr>
-                            <th>Case</th>
-                            <th>N</th>
-                            <th>Vy</th>
-                            <th>Vx</th>
-                            <th>M</th>
-                            <th>T</th>
-                            <th>M_sls</th>
-                            <th>N_sls</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="load-case-tbody">
-                        <!-- Rows will be added dynamically -->
-                    </tbody>
-                </table>
-                <div class="table-button-group">
-                    <button type="button" class="table-button" id="add-load-case-btn">Add Row</button>
-                    <button type="button" class="table-button" id="paste-data-btn">Paste from Spreadsheet</button>
+            <details open>
+                <summary>Batch Load Case Input</summary>
+                <div class="accordion-content">
+                    <small class="convention">Sign Convention: N (+Comp, -Ten), M (+Hog, -Sag)</small>
+                    <div class="input-group">
+                        <table id="load-case-table">
+                            <thead>
+                                <tr>
+                                    <th>Case</th><th>N</th><th>Vy</th><th>Vx</th><th>M</th><th>T</th><th>M_sls</th><th>N_sls</th><th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="load-case-tbody"></tbody>
+                        </table>
+                        <div class="table-button-group">
+                            <button type="button" class="table-button" id="add-load-case-btn">Add Row</button>
+                            <button type="button" class="table-button" id="paste-data-btn">Paste from Spreadsheet</button>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </details>
 
-            <h2>Material Properties</h2>
-            <div class="input-group">
-                <label for="fcu">Concrete Grade, fcu (N/mm²)</label>
-                <select id="fcu"><option value="35" selected>C35/45</option><option value="20">C20/25</option><option value="25">C25/30</option><option value="30">C30/37</option><option value="40">C40/50</option><option value="45">C45/55</option><option value="50">C50/60</option></select>
-            </div>
-            <div class="input-group">
-                <label for="fy">Rebar Grade, fy (N/mm²)</label>
-                <select id="fy"><option value="500">500B</option><option value="250">250</option></select>
-            </div>
+            <details>
+                <summary>Material Properties</summary>
+                <div class="accordion-content">
+                    <div class="input-group">
+                        <label for="fcu">Concrete Grade, fcu (N/mm²)</label>
+                        <select id="fcu"><option value="35" selected>C35/45</option><option value="20">C20/25</option><option value="25">C25/30</option><option value="30">C30/37</option><option value="40">C40/50</option><option value="45">C45/55</option><option value="50">C50/60</option></select>
+                    </div>
+                    <div class="input-group">
+                        <label for="fy">Rebar Grade, fy (N/mm²)</label>
+                        <select id="fy"><option value="500">500B</option><option value="250">250</option></select>
+                    </div>
+                </div>
+            </details>
             
-            <h2>Preliminary Design & Detailing</h2>
-             <div class="input-group">
-                <label for="supportCondition">Support Condition</label>
-                <select id="supportCondition">
-                    <option value="simply-supported" selected>Simply Supported</option>
-                    <option value="continuous">Continuous</option>
-                    <option value="cantilever">Cantilever</option>
-                </select>
-            </div>
-            <div class="input-group">
-                <label for="span">Span Length (m) <span class="convention">(for deflection check)</span></label>
-                <input type="number" id="span" value="5">
-            </div>
-             <div class="input-group">
-                <label for="b">Beam Width, b (mm)</label>
-                <input type="number" id="b" value="250">
-            </div>
-            <div class="input-group">
-                <label for="h">Beam Height, h (mm)</label>
-                <input type="number" id="h" value="450">
-            </div>
-             <div class="input-group">
-                <label for="c_nom">Nominal Cover, c<sub>nom</sub> (mm)</label>
-                <input type="number" id="c_nom" value="35">
-            </div>
-
-            <div class="input-group">
-                <label>Top Reinforcement</label>
-                <table class="rebar-table">
-                    <thead><tr><th>Layer</th><th>No.</th><th>Dia.</th><th>Spacing (mm)</th><th></th></tr></thead>
-                    <tbody id="top-layers-container"></tbody>
-                </table>
-                <button type="button" class="layer-button" id="add-top-layer-btn">Add Top Layer</button>
-            </div>
-            <div class="input-group">
-                <label>Bottom Reinforcement</label>
-                 <table class="rebar-table">
-                     <thead><tr><th>Layer</th><th>No.</th><th>Dia.</th><th>Spacing (mm)</th><th></th></tr></thead>
-                    <tbody id="bottom-layers-container"></tbody>
-                </table>
-                <button type="button" class="layer-button" id="add-bottom-layer-btn">Add Bottom Layer</button>
-            </div>
-             <div class="input-group">
-                <label for="aggSize">Nominal Max Aggregate Size (mm)</label>
-                <input type="number" id="aggSize" value="20">
-                 <small class="convention">Note: Min clear spacing between layers &ge; max(bar dia, h<sub>agg</sub>+5, 20mm) [Cl. 8.2]</small>
-            </div>
-            <div class="input-group">
-                <label for="linkDia">Shear Link Diameter (mm)</label>
-                 <select id="linkDia"><option value="8">8</option><option value="10" selected>10</option><option value="12">12</option><option value="16">16</option><option value="25">25</option><option value="32">32</option><option value="40">40</option></select>
-            </div>
-            <div class="input-group">
-                <label for="numLinkLegs">Number of Shear Link Legs</label>
-                <input type="number" id="numLinkLegs" value="2">
-            </div>
-            <div class="input-group">
-                <label for="linkSpacing">Shear Link Spacing (mm)</label>
-                <input type="number" id="linkSpacing" value="200">
-            </div>
-             <div class="input-group">
-                <label for="restraintFactor">Restraint Factor, R <span class="convention">(for thermal crack)</span></label>
-                <input type="number" id="restraintFactor" value="0.5">
-            </div>
-             <div class="input-group">
-                <label for="tempDrop">Temperature Drop, T1 (°C) <span class="convention">(for thermal crack)</span></label>
-                <input type="number" id="tempDrop" value="30">
-            </div>
+            <details>
+                <summary>Beam & Rebar Detailing</summary>
+                <div class="accordion-content">
+                     <div class="input-group">
+                        <label for="supportCondition">Support Condition</label>
+                        <select id="supportCondition"><option value="simply-supported" selected>Simply Supported</option><option value="continuous">Continuous</option><option value="cantilever">Cantilever</option></select>
+                    </div>
+                    <div class="input-group"><label for="span">Span Length (m)</label><input type="number" id="span" value="5"></div>
+                    <div class="input-group"><label for="b">Beam Width, b (mm)</label><input type="number" id="b" value="250"></div>
+                    <div class="input-group"><label for="h">Beam Height, h (mm)</label><input type="number" id="h" value="450"></div>
+                    <div class="input-group"><label for="c_nom">Nominal Cover, c<sub>nom</sub> (mm)</label><input type="number" id="c_nom" value="35"></div>
+                    <div class="input-group"><label>Top Reinforcement</label><table class="rebar-table"><thead><tr><th>Layer</th><th>No.</th><th>Dia.</th><th>Spacing (mm)</th><th></th></tr></thead><tbody id="top-layers-container"></tbody></table><button type="button" class="layer-button" id="add-top-layer-btn">Add Top Layer</button></div>
+                    <div class="input-group"><label>Bottom Reinforcement</label><table class="rebar-table"><thead><tr><th>Layer</th><th>No.</th><th>Dia.</th><th>Spacing (mm)</th><th></th></tr></thead><tbody id="bottom-layers-container"></tbody></table><button type="button" class="layer-button" id="add-bottom-layer-btn">Add Bottom Layer</button></div>
+                    <div class="input-group"><label for="aggSize">Nominal Max Aggregate Size (mm)</label><input type="number" id="aggSize" value="20"></div>
+                    <div class="input-group"><label for="linkDia">Shear Link Diameter (mm)</label><select id="linkDia"><option value="8">8</option><option value="10" selected>10</option><option value="12">12</option><option value="16">16</option><option value="25">25</option><option value="32">32</option><option value="40">40</option></select></div>
+                    <div class="input-group"><label for="numLinkLegs">Number of Shear Link Legs</label><input type="number" id="numLinkLegs" value="2"></div>
+                    <div class="input-group"><label for="linkSpacing">Shear Link Spacing (mm)</label><input type="number" id="linkSpacing" value="200"></div>
+                    <div class="input-group"><label for="restraintFactor">Restraint Factor, R</label><input type="number" id="restraintFactor" value="0.5"></div>
+                    <div class="input-group"><label for="tempDrop">Temperature Drop, T1 (°C)</label><input type="number" id="tempDrop" value="30"></div>
+                </div>
+            </details>
             
-            <h2>Report Details</h2>
-             <div class="input-group"><label for="designerName">Designer</label><input type="text" id="designerName" value="C.E."></div>
-             <div class="input-group"><label for="checkedBy">Checked By</label><input type="text" id="checkedBy" value="S.E."></div>
-             <div class="input-group"><label for="projectTitle">Project Title</label><input type="text" id="projectTitle" value="Example Project"></div>
-             <div class="input-group"><label for="projectSubTitle">Sub-title</label><input type="text" id="projectSubTitle" value="RC Beam Section Design"></div>
-             <div class="input-group"><label for="reportDate">Date</label><input type="date" id="reportDate"></div>
-             <div class="input-group"><label for="reportRevision">Revision</label><input type="text" id="reportRevision" value="A"></div>
-             <div class="input-group"><label for="companyLogo">Company Logo</label><input type="file" id="companyLogo" accept="image/*"></div>
-             <div class="input-group checkbox-group">
-                <input type="checkbox" id="includeOverview" checked>
-                <label for="includeOverview">Include Overview Section</label>
-             </div>
+            <details>
+                <summary>Report Details</summary>
+                <div class="accordion-content">
+                     <div class="input-group"><label for="designerName">Designer</label><input type="text" id="designerName" value="C.E."></div>
+                     <div class="input-group"><label for="checkedBy">Checked By</label><input type="text" id="checkedBy" value="S.E."></div>
+                     <div class="input-group"><label for="projectTitle">Project Title</label><input type="text" id="projectTitle" value="Example Project"></div>
+                     <div class="input-group"><label for="projectSubTitle">Sub-title</label><input type="text" id="projectSubTitle" value="RC Beam Section Design"></div>
+                     <div class="input-group"><label for="reportDate">Date</label><input type="date" id="reportDate"></div>
+                     <div class="input-group"><label for="reportRevision">Revision</label><input type="text" id="reportRevision" value="A"></div>
+                     <div class="input-group"><label for="companyLogo">Company Logo</label><input type="file" id="companyLogo" accept="image/*"></div>
+                     <div class="input-group checkbox-group"><input type="checkbox" id="includeOverview" checked><label for="includeOverview">Include Overview Section</label></div>
+                </div>
+            </details>
             
             <button id="calc-btn">Analyze & Verify Design</button>
-            <button id="print-btn">Print to PDF</button>
+            <div class="table-button-group">
+                <button id="print-btn">Print to PDF</button>
+                <button id="reset-btn">Reset to Defaults</button>
+            </div>
             
             <div class="version-notes">
                 <strong>Notes on V6.0 Update:</strong>
                 <ul>
-                    <li>Replaced batch text input with an interactive table.</li>
-                    <li>Added a "Paste from Spreadsheet" feature to populate the table.</li>
-                    <li>Print styles have been further refined for better layout and readability.</li>
-                    <li>Added SLS axial load input for more accurate crack width calculations.</li>
+                    <li>Finalized UI with accordions and improved visual feedback.</li>
+                    <li>Corrected all known bugs related to dynamic data input and report updates.</li>
+                    <li>Ensured Local Storage saves and loads all user inputs correctly.</li>
+                    <li>The tool is now considered a stable release.</li>
                 </ul>
             </div>
         </div>
@@ -621,6 +392,7 @@
         // --- Global Variables ---
         document.getElementById('reportDate').valueAsDate = new Date();
         const barData = { 6: 28.3, 8: 50.3, 10: 78.5, 12: 113.1, 16: 201.1, 20: 314.2, 25: 490.9, 32: 804.3, 40: 1256.6, 50: 1963.5 };
+        let allResults = []; // Store all calculation results here
         
         // --- UI & Helper Functions ---
         
@@ -726,7 +498,7 @@
 
             lines.forEach(line => {
                 const parts = line.split(/[\s,;\t]+/); // Use a flexible regex for splitting
-                if (parts.length >= 8) {
+                if (parts.length > 0 && parts[0] !== "") {
                     addLoadCaseRow(parts);
                 }
             });
@@ -1025,21 +797,24 @@
             }
 
             // 4. Run calculations for all cases
-            const results = loadCases.map(lc => calculate(lc, baseInputs, rebarInputs));
+            allResults = loadCases.map(lc => calculate(lc, baseInputs, rebarInputs));
 
             // 5. Find the critical case
-            let criticalCase = results[0];
-            for (let i = 1; i < results.length; i++) {
-                if (results[i].utilization.overall > criticalCase.utilization.overall) {
-                    criticalCase = results[i];
+            let criticalCase = allResults[0];
+            let criticalIndex = 0;
+            for (let i = 1; i < allResults.length; i++) {
+                if (allResults[i].utilization.overall > criticalCase.utilization.overall) {
+                    criticalCase = allResults[i];
+                    criticalIndex = i;
                 }
             }
             
             // 6. Generate Reports
-            const summaryReportHTML = generateSummaryReport(results);
+            const summaryReportHTML = generateSummaryReport(allResults, criticalIndex);
             const detailedReportHTML = generateDetailedReport(criticalCase.inputs, criticalCase.calcs);
 
             document.getElementById('output-section').innerHTML = summaryReportHTML + detailedReportHTML;
+            saveDataToLocalStorage();
         }
         
         // --- Report Generation & Rendering ---
@@ -1059,27 +834,35 @@
             `;
         }
 
-        function generateSummaryReport(results) {
+        function generateSummaryReport(results, criticalIndex) {
             const designer = document.getElementById('designerName').value || 'N/A', checkedBy = document.getElementById('checkedBy').value || 'N/A';
             const title = document.getElementById('projectTitle').value || 'N/A', subTitle = 'Load Case Summary';
             const date = document.getElementById('reportDate').value || new Date().toISOString().slice(0, 10), revision = document.getElementById('reportRevision').value || 'N/A';
             const logoInput = document.getElementById('companyLogo').files[0], logoSrc = logoInput ? URL.createObjectURL(logoInput) : '';
 
             let tableRows = '';
-            results.forEach(res => {
+            results.forEach((res, index) => {
                 const flex_ur = res.utilization.flex;
                 const shear_ur = res.utilization.shear;
                 const defl_ur = res.utilization.deflection;
+                
+                const getBarColor = (ur) => {
+                    if (ur > 1.0) return 'var(--danger-color)';
+                    if (ur > 0.8) return 'var(--warning-color)';
+                    return 'var(--success-color)';
+                };
 
                 tableRows += `
-                    <tr>
+                    <tr data-case-index="${index}" class="${index === criticalIndex ? 'critical' : ''}">
                         <td>${res.inputs.caseName}</td>
                         <td>${res.inputs.N.toFixed(2)}</td>
-                        <td>${res.inputs.M.toFixed(2)}</td>
                         <td>${res.inputs.Vy.toFixed(2)}</td>
-                        <td class="${flex_ur > 1.0 ? 'check-fail' : 'check-ok'}">${flex_ur.toFixed(2)}</td>
-                        <td class="${shear_ur > 1.0 ? 'check-fail' : 'check-ok'}">${shear_ur.toFixed(2)}</td>
-                        <td class="${defl_ur > 1.0 ? 'check-fail' : 'check-ok'}">${defl_ur.toFixed(2)}</td>
+                        <td>${res.inputs.Vx.toFixed(2)}</td>
+                        <td>${res.inputs.M.toFixed(2)}</td>
+                        <td>${res.inputs.T.toFixed(2)}</td>
+                        <td class="${flex_ur > 1.0 ? 'check-fail' : ''}">${flex_ur.toFixed(2)} <div class="utilization-bar"><div class="utilization-bar-inner" style="width: ${Math.min(flex_ur, 1) * 100}%; background-color: ${getBarColor(flex_ur)};"></div></div></td>
+                        <td class="${shear_ur > 1.0 ? 'check-fail' : ''}">${shear_ur.toFixed(2)} <div class="utilization-bar"><div class="utilization-bar-inner" style="width: ${Math.min(shear_ur, 1) * 100}%; background-color: ${getBarColor(shear_ur)};"></div></div></td>
+                        <td class="${defl_ur > 1.0 ? 'check-fail' : ''}">${defl_ur.toFixed(2)} <div class="utilization-bar"><div class="utilization-bar-inner" style="width: ${Math.min(defl_ur, 1) * 100}%; background-color: ${getBarColor(defl_ur)};"></div></div></td>
                     </tr>
                 `;
             });
@@ -1087,14 +870,16 @@
             return `
                 <div class="page-container" id="load-case-summary">
                     ${generateReportHeader(title, subTitle, designer, checkedBy, date, revision, logoSrc)}
-                    <h2>Load Case Summary</h2>
+                    <h2>Load Case Summary <span class="citation">(Click a row to view detailed report)</span></h2>
                     <table>
                         <thead>
                             <tr>
                                 <th>Case</th>
                                 <th>N (kN)</th>
-                                <th>M (kNm)</th>
                                 <th>V<sub>y</sub> (kN)</th>
+                                <th>V<sub>x</sub> (kN)</th>
+                                <th>M (kNm)</th>
+                                <th>T (kNm)</th>
                                 <th>Flexure U.R.</th>
                                 <th>Shear U.R.</th>
                                 <th>Deflection U.R.</th>
@@ -1135,7 +920,7 @@
             }
             
             const criticalCaseTableHTML = `
-                <h4>Critical Load Case: ${inputs.caseName}</h4>
+                <h4>Design Load Case: ${inputs.caseName}</h4>
                 <table>
                     <thead>
                         <tr>
@@ -1163,8 +948,8 @@
             `;
 
             let html = `
-            <div class="page-container">
-                ${generateReportHeader(title, `${subTitle} (Critical Case: ${inputs.caseName})`, designer, checkedBy, date, revision, logoSrc)}
+            <div class="page-container" id="detailed-report-container">
+                ${generateReportHeader(title, `${subTitle} (Design Case: ${inputs.caseName})`, designer, checkedBy, date, revision, logoSrc)}
                 ${overviewHTML}
                 
                 <h2>${sectionCounter++}. Design Check Summary</h2>
@@ -1252,10 +1037,6 @@
         }
 
         window.onload = function() {
-            addLayer('top');
-            addLayer('bottom');
-            addLoadCaseRow(['LC1', 0, 95.5, 0, 119.4, 0, 80, 0]); // Add a default row
-            
             // Setup a single event listener for the entire document for better performance and handling of dynamic elements
             document.body.addEventListener('click', (event) => {
                 const target = event.target;
@@ -1291,6 +1072,26 @@
                 else if (target.id === 'print-btn') {
                     window.print();
                 }
+                else if (target.id === 'reset-btn') {
+                    if (confirm("Are you sure you want to reset all inputs to their default values? This will clear all your data.")) {
+                        localStorage.removeItem('rcBeamCalculatorData');
+                        window.location.reload();
+                    }
+                }
+                else if (target.closest('#load-case-summary tbody tr')) {
+                    const row = target.closest('tr');
+                    const caseIndex = parseInt(row.getAttribute('data-case-index'));
+                    if (!isNaN(caseIndex) && allResults[caseIndex]) {
+                        const newDetailedReport = generateDetailedReport(allResults[caseIndex].inputs, allResults[caseIndex].calcs);
+                        const oldReport = document.getElementById('detailed-report-container');
+                        if (oldReport) {
+                            oldReport.outerHTML = newDetailedReport;
+                        }
+                        // Highlight the new critical row
+                        document.querySelectorAll('#load-case-summary tbody tr').forEach(r => r.classList.remove('critical'));
+                        row.classList.add('critical');
+                    }
+                }
             });
 
             // Add change/input listeners for automatic updates on the entire input panel
@@ -1308,8 +1109,104 @@
                 });
             }
              
-             runBatchAnalysis(); // Initial run on page load
+             loadDataFromLocalStorage(); // Load saved data on page load
         };
+
+        function saveDataToLocalStorage() {
+            const data = {
+                reportDetails: {},
+                detailing: {},
+                rebar: { top: [], bottom: [] },
+                loadCases: []
+            };
+
+            // Save report details
+            document.querySelectorAll('#designerName, #checkedBy, #projectTitle, #projectSubTitle, #reportDate, #reportRevision, #includeOverview').forEach(el => {
+                data.reportDetails[el.id] = el.type === 'checkbox' ? el.checked : el.value;
+            });
+            
+            // Save detailing and material properties
+            document.querySelectorAll('#fcu, #fy, #supportCondition, #span, #b, #h, #c_nom, #aggSize, #linkDia, #numLinkLegs, #linkSpacing, #restraintFactor, #tempDrop').forEach(el => {
+                data.detailing[el.id] = el.value;
+            });
+
+            // Save rebar layers
+            document.querySelectorAll('#top-layers-container tr').forEach(row => {
+                data.rebar.top.push({
+                    num: row.querySelector('.num-bars').value,
+                    dia: row.querySelector('.bar-dia').value,
+                    spacing: row.querySelector('.clear-spacing') ? row.querySelector('.clear-spacing').value : 'N/A'
+                });
+            });
+            document.querySelectorAll('#bottom-layers-container tr').forEach(row => {
+                data.rebar.bottom.push({
+                    num: row.querySelector('.num-bars').value,
+                    dia: row.querySelector('.bar-dia').value,
+                    spacing: row.querySelector('.clear-spacing') ? row.querySelector('.clear-spacing').value : 'N/A'
+                });
+            });
+
+            // Save load cases
+            document.querySelectorAll('#load-case-tbody tr').forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                data.loadCases.push(Array.from(inputs).map(i => i.value));
+            });
+
+            localStorage.setItem('rcBeamCalculatorData', JSON.stringify(data));
+        }
+
+        function loadDataFromLocalStorage() {
+            const savedData = localStorage.getItem('rcBeamCalculatorData');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+
+                // Load report details
+                for (const id in data.reportDetails) {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        if (el.type === 'checkbox') el.checked = data.reportDetails[id];
+                        else el.value = data.reportDetails[id];
+                    }
+                }
+
+                // Load detailing and material properties
+                for (const id in data.detailing) {
+                    const el = document.getElementById(id);
+                    if (el) el.value = data.detailing[id];
+                }
+
+                // Load rebar layers
+                const topContainer = document.getElementById('top-layers-container');
+                topContainer.innerHTML = '';
+                data.rebar.top.forEach(layer => addLayer('top'));
+                document.querySelectorAll('#top-layers-container tr').forEach((row, i) => {
+                    row.querySelector('.num-bars').value = data.rebar.top[i].num;
+                    row.querySelector('.bar-dia').value = data.rebar.top[i].dia;
+                    if(row.querySelector('.clear-spacing')) row.querySelector('.clear-spacing').value = data.rebar.top[i].spacing;
+                });
+
+                const bottomContainer = document.getElementById('bottom-layers-container');
+                bottomContainer.innerHTML = '';
+                data.rebar.bottom.forEach(layer => addLayer('bottom'));
+                document.querySelectorAll('#bottom-layers-container tr').forEach((row, i) => {
+                    row.querySelector('.num-bars').value = data.rebar.bottom[i].num;
+                    row.querySelector('.bar-dia').value = data.rebar.bottom[i].dia;
+                    if(row.querySelector('.clear-spacing')) row.querySelector('.clear-spacing').value = data.rebar.bottom[i].spacing;
+                });
+
+                // Load load cases
+                const loadCaseContainer = document.getElementById('load-case-tbody');
+                loadCaseContainer.innerHTML = '';
+                data.loadCases.forEach(lc => addLoadCaseRow(lc));
+            } else {
+                // Setup default state if no saved data
+                addLayer('top');
+                addLayer('bottom');
+                addLoadCaseRow(['LC1', 0, 95.5, 0, 119.4, 0, 80, 0]);
+            }
+            runBatchAnalysis();
+        }
+
     </script>
 </body>
 </html>
