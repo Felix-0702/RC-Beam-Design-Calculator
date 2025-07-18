@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RC Section Design Report Generator (HK CoP 2013) - v6.0</title>
+    <title>RC Section Design Report Generator (HK CoP 2013) - v6.2 AI Enhanced</title>
     <style>
-        /* * Professional Engineering Report Stylesheet v6.0
-         * - Implemented accordions for organized input.
-         * - Enhanced visual feedback with utilization bars.
-         * - Interactive summary report for detailed case review.
-         * - Refined aesthetics with modern button styles and layout.
-         * - Added Local Storage for data persistence.
+        /* * Professional Engineering Report Stylesheet v6.2
+         * - Added functionality to select AI provider and use custom API endpoints.
+         * - Refined AI design recommendation output to be more brief and use numbered lists.
+         * - Corrected shear calculation to align with HK CoP 2013 Table 6.3.
+         * - Implemented AI-powered overview generation and rephrasing.
+         * - Refined UI with accordions and interactive elements.
          */
         :root {
             --primary-color: #0d47a1; /* Professional blue */
@@ -131,7 +131,6 @@
         }
         details[open] summary::after {
             content: '−';
-            transform: rotate(180deg);
         }
         .accordion-content {
             padding: 0 15px 15px 15px;
@@ -182,14 +181,14 @@
             filter: brightness(1.1);
         }
 
-        button.table-button {
+        button.table-button, button.ai-button {
              background-color: var(--info-color);
              font-size: 14px;
              padding: 8px;
              margin-top: 4px;
         }
         
-        .table-button-group { display: flex; gap: 10px; }
+        .table-button-group, .ai-button-group { display: flex; gap: 10px; }
         
         button.remove-layer-btn {
             background-color: var(--danger-color);
@@ -254,6 +253,21 @@
         .report-header .info-cell p { margin: 2px 0; }
         .report-header .info-cell span { font-weight: bold; }
         
+        #recommendation-section {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid var(--warning-color);
+            background-color: #fffbe6;
+            border-radius: 8px;
+        }
+         #recommendation-section h3 {
+             color: #d97706; /* Darker warning color */
+             border-bottom-color: #f59e0b;
+             margin-top: 0;
+        }
+        #recommendation-output { white-space: pre-wrap; font-family: monospace; }
+        
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 600px; }
         .modal-content textarea { height: 200px; }
@@ -264,7 +278,7 @@
         @media print {
             body { background-color: #fff; font-size: 12px; line-height: 1.4; }
             .main-container { display: block; padding: 0; }
-            .inputs-panel { display: none; }
+            .inputs-panel, .ai-button { display: none !important; }
             .report-panel { width: 100%; }
             .page-container { width: calc(100% - 50px); box-shadow: none; border: none; margin: 20px 20px 20px 30px; padding: 0; page-break-after: always; }
             .page-container:last-child { page-break-after: auto; }
@@ -277,13 +291,14 @@
             .design-summary-container, .section-with-diagram { gap: 15px; }
             .beam-sketch { max-width: 280px; }
             table, .design-summary-container, .section-with-diagram, #load-case-summary { page-break-inside: avoid; }
+            #recommendation-section { display: none !important; } /* Hide AI section in print */
         }
     </style>
 </head>
 <body>
     <div class="main-container">
         <div class="inputs-panel">
-            <h1>RC Section Design Inputs (v6.0)</h1>
+            <h1>RC Section Design Inputs (v6.2)</h1>
             
             <details open>
                 <summary>Batch Load Case Input</summary>
@@ -331,8 +346,8 @@
                     <div class="input-group"><label for="b">Beam Width, b (mm)</label><input type="number" id="b" value="250"></div>
                     <div class="input-group"><label for="h">Beam Height, h (mm)</label><input type="number" id="h" value="450"></div>
                     <div class="input-group"><label for="c_nom">Nominal Cover, c<sub>nom</sub> (mm)</label><input type="number" id="c_nom" value="35"></div>
-                    <div class="input-group"><label>Top Reinforcement</label><table class="rebar-table"><thead><tr><th>Layer</th><th>No.</th><th>Dia.</th><th>Spacing (mm)</th><th></th></tr></thead><tbody id="top-layers-container"></tbody></table><button type="button" class="layer-button" id="add-top-layer-btn">Add Top Layer</button></div>
-                    <div class="input-group"><label>Bottom Reinforcement</label><table class="rebar-table"><thead><tr><th>Layer</th><th>No.</th><th>Dia.</th><th>Spacing (mm)</th><th></th></tr></thead><tbody id="bottom-layers-container"></tbody></table><button type="button" class="layer-button" id="add-bottom-layer-btn">Add Bottom Layer</button></div>
+                    <div class="input-group"><label>Top Reinforcement</label><table class="rebar-table"><thead><tr><th>Layer</th><th>No.</th><th>Dia.</th><th>Spacing (mm)</th><th></th></tr></thead><tbody id="top-layers-container"></tbody></table><button type="button" class="table-button" id="add-top-layer-btn">Add Top Layer</button></div>
+                    <div class="input-group"><label>Bottom Reinforcement</label><table class="rebar-table"><thead><tr><th>Layer</th><th>No.</th><th>Dia.</th><th>Spacing (mm)</th><th></th></tr></thead><tbody id="bottom-layers-container"></tbody></table><button type="button" class="table-button" id="add-bottom-layer-btn">Add Bottom Layer</button></div>
                     <div class="input-group"><label for="aggSize">Nominal Max Aggregate Size (mm)</label><input type="number" id="aggSize" value="20"></div>
                     <div class="input-group"><label for="linkDia">Shear Link Diameter (mm)</label><select id="linkDia"><option value="8">8</option><option value="10" selected>10</option><option value="12">12</option><option value="16">16</option><option value="25">25</option><option value="32">32</option><option value="40">40</option></select></div>
                     <div class="input-group"><label for="numLinkLegs">Number of Shear Link Legs</label><input type="number" id="numLinkLegs" value="2"></div>
@@ -343,7 +358,7 @@
             </details>
             
             <details>
-                <summary>Report Details</summary>
+                <summary>Report Details & AI Assistant</summary>
                 <div class="accordion-content">
                      <div class="input-group"><label for="designerName">Designer</label><input type="text" id="designerName" value="C.E."></div>
                      <div class="input-group"><label for="checkedBy">Checked By</label><input type="text" id="checkedBy" value="S.E."></div>
@@ -353,9 +368,43 @@
                      <div class="input-group"><label for="reportRevision">Revision</label><input type="text" id="reportRevision" value="A"></div>
                      <div class="input-group"><label for="companyLogo">Company Logo</label><input type="file" id="companyLogo" accept="image/*"></div>
                      <div class="input-group checkbox-group"><input type="checkbox" id="includeOverview" checked><label for="includeOverview">Include Overview Section</label></div>
+                     <div id="ai-overview-controls" class="input-group">
+                         <label for="ai-overview-text">AI Overview Assistant</label>
+                         <textarea id="ai-overview-text" placeholder="Write notes here to rephrase, or click 'Generate' to create from scratch."></textarea>
+                         <div class="ai-button-group">
+                            <button id="generate-overview-btn" class="ai-button">✨ Generate</button>
+                            <button id="rephrase-overview-btn" class="ai-button">✍️ Rephrase</button>
+                         </div>
+                     </div>
+                     <details>
+                        <summary>Advanced AI Settings</summary>
+                        <div class="accordion-content">
+                            <div class="input-group">
+                                <label for="aiProvider">AI Provider</label>
+                                <select id="aiProvider">
+                                    <option value="gemini" selected>Google Gemini</option>
+                                    <option value="custom">Custom</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label for="apiUrl">API URL</label>
+                                <input type="text" id="apiUrl" placeholder="e.g., https://api.openai.com/v1/chat/completions">
+                            </div>
+                            <div class="input-group">
+                                <label for="apiKey">API Key</label>
+                                <input type="password" id="apiKey" placeholder="Enter your API key here">
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </details>
             
+            <div id="recommendation-section">
+                <h3>💡 AI Design Recommendation</h3>
+                <div id="recommendation-output"></div>
+                <button id="ai-recommend-btn" class="ai-button">Get another suggestion</button>
+            </div>
+
             <button id="calc-btn">Analyze & Verify Design</button>
             <div class="table-button-group">
                 <button id="print-btn">Print to PDF</button>
@@ -363,12 +412,12 @@
             </div>
             
             <div class="version-notes">
-                <strong>Notes on V6.0 Update:</strong>
+                <strong>Notes on V6.2 Update:</strong>
                 <ul>
-                    <li>Finalized UI with accordions and improved visual feedback.</li>
-                    <li>Corrected all known bugs related to dynamic data input and report updates.</li>
-                    <li>Ensured Local Storage saves and loads all user inputs correctly.</li>
-                    <li>The tool is now considered a stable release.</li>
+                    <li>Added functionality to select AI provider and use custom API endpoints.</li>
+                    <li>Refined AI design recommendation output to be more brief and use numbered lists.</li>
+                    <li>Corrected shear capacity calculation (v<sub>c</sub>) to strictly follow HK CoP 2013 Table 6.3.</li>
+                    <li>Implemented fully functional AI for design recommendations and report overview generation.</li>
                 </ul>
             </div>
         </div>
@@ -393,6 +442,7 @@
         document.getElementById('reportDate').valueAsDate = new Date();
         const barData = { 6: 28.3, 8: 50.3, 10: 78.5, 12: 113.1, 16: 201.1, 20: 314.2, 25: 490.9, 32: 804.3, 40: 1256.6, 50: 1963.5 };
         let allResults = []; // Store all calculation results here
+        let lastCriticalCase = {}; // Store the last critical case for AI functions
         
         // --- UI & Helper Functions ---
         
@@ -482,13 +532,8 @@
             `;
         }
         
-        function showPasteModal() {
-            document.getElementById('paste-modal').style.display = 'flex';
-        }
-
-        function hidePasteModal() {
-            document.getElementById('paste-modal').style.display = 'none';
-        }
+        function showPasteModal() { document.getElementById('paste-modal').style.display = 'flex'; }
+        function hidePasteModal() { document.getElementById('paste-modal').style.display = 'none'; }
 
         function processPastedData() {
             const data = document.getElementById('spreadsheet-data').value;
@@ -505,7 +550,6 @@
             hidePasteModal();
             runBatchAnalysis(); // Trigger analysis once after all rows are added
         }
-
 
         // --- Core Calculation & Report Generation ---
         
@@ -592,10 +636,7 @@
             
             const vy = inputs.Vy * 1e3 / (inputs.b * d_y);
             let vcy_base = (rho_l > 0) ? (0.79 * Math.pow(rho_l * 100, 1/3) * Math.pow(400/d_y, 1/4) / 1.25) * vc_multiplier : 0;
-            if (inputs.N !== 0 && M_abs > 0) {
-                 vcy_base += 0.6 * (inputs.N * 1000 * d_y) / (M_abs * 1e6) * (vy * 1e3 / (inputs.b * d_y));
-            }
-            const vcy = Math.max(vcy_base, 0.4); // vc should not be less than vr
+            const vcy = vcy_base;
             const vry = (inputs.fcu <= 40) ? 0.4 : 0.4 * Math.pow(inputs.fcu / 40, 2/3);
             
             let Asv_y_s_req = (vy < 0.5 * vcy) ? vry * inputs.b / (0.87 * inputs.fy) : (vy - vcy) * inputs.b / (0.87 * inputs.fy);
@@ -656,23 +697,17 @@
             const d_y_sls = isHogging_sls ? (inputs.h - d_top_centroid) : (inputs.h - d_bottom_centroid_from_bottom);
             const d_prime_sls = isHogging_sls ? d_bottom_centroid_from_bottom : d_top_centroid;
             
-            // Effective SLS moment including axial load
             const M_sls_eff = M_sls * 1e6 + inputs.N_sls * 1e3 * (inputs.h/2 - d_y_sls);
 
             if (M_sls_eff > 0 && As_prov_sls > 0) {
-                 // Cracked section analysis for SLS
                 const alpha_e = 15; // Modular ratio, common assumption
                 const A = 0.5 * inputs.b;
                 const B = alpha_e * As_prov_sls + (alpha_e - 1) * As_prime_prov_sls;
                 const C = -(alpha_e * As_prov_sls * d_y_sls + (alpha_e - 1) * As_prime_prov_sls * d_prime_sls);
                 
-                // Solve quadratic equation Ax^2 + Bx + C = 0 for neutral axis depth x_sls
                 x_sls = (-B + Math.sqrt(B**2 - 4 * A * C)) / (2 * A);
                 
-                // Lever arm for SLS
                 const z_sls = d_y_sls - x_sls / 3;
-                
-                // Steel stress under SLS moment
                 fs_crack = (M_sls_eff) / (As_prov_sls * z_sls);
 
                 const tensionBarDiaValue = tensionRebar_sls.layers[0]?.dia || 0;
@@ -683,9 +718,7 @@
                 const eps1 = (fs_crack / Es) * ( (inputs.h - x_sls) / (d_y_sls - x_sls) );
                 eps_m = eps1 - (inputs.b * (inputs.h - x_sls)**2) / (3 * Es * As_prov_sls * (d_y_sls - x_sls));
 
-                if (!deflection_check) { // Only calculate if deemed-to-satisfy fails
-                     w_k_flexural = (3 * acr_flexural * eps_m) / (1 + 2 * (acr_flexural - c_min) / (inputs.h - x_sls));
-                }
+                w_k_flexural = (3 * acr_flexural * eps_m) / (1 + 2 * (acr_flexural - c_min) / (inputs.h - x_sls));
             }
             
             const alpha_t = 10e-6, eps_r = 0.8 * alpha_t * inputs.T1 * inputs.R;
@@ -696,14 +729,13 @@
             const total_crack_width = w_k_flexural + w_k_thermal;
 
             const crack_width_html = `
-                 ${!deflection_check ? `
                 <h4>Flexural Crack Calculation <span class="citation">Cl. 7.2.3</span></h4>
                 <table>
                     <tr><td>Service Steel Stress, f<sub>s</sub></td><td class="formula">M<sub>sls,eff</sub> / (A<sub>s,prov</sub>&middot;z<sub>sls</sub>)</td><td>${fs_crack.toFixed(1)} N/mm²</td></tr>
                     <tr><td>Distance to corner of bar, a<sub>cr</sub></td><td>Calculated from geometry</td><td>${acr_flexural.toFixed(1)} mm</td></tr>
                     <tr><td>Average Strain, &epsilon;<sub>m</sub></td><td class="formula">&epsilon;<sub>1</sub> - f(b<sub>t</sub>,h,x,E<sub>s</sub>,A<sub>s</sub>,d)</td><td>${eps_m.toExponential(2)}</td></tr>
                     <tr><td>Calculated Flexural Crack Width, w<sub>k,flex</sub></td><td class="formula">3a<sub>cr</sub>&epsilon;<sub>m</sub> / (1+...)</td><td>${w_k_flexural.toFixed(3)} mm</td></tr>
-                </table>` : `<p>Deemed-to-satisfy span/depth ratio is met. Flexural crack width calculation not required.</p>`}
+                </table>
                 <h4>Early Thermal Crack Calculation <span class="citation">Cl. 7.2.4</span></h4>
                 <table>
                      <tr><td>Restrained Strain, &epsilon;<sub>r</sub></td><td class="formula">0.8 &alpha; T<sub>1</sub> R</td><td>${eps_r.toExponential(2)}</td></tr>
@@ -809,11 +841,17 @@
                 }
             }
             
+            lastCriticalCase = criticalCase; // Store for AI functions
+
             // 6. Generate Reports
             const summaryReportHTML = generateSummaryReport(allResults, criticalIndex);
             const detailedReportHTML = generateDetailedReport(criticalCase.inputs, criticalCase.calcs);
 
             document.getElementById('output-section').innerHTML = summaryReportHTML + detailedReportHTML;
+            
+            // 7. Check for failure and trigger AI
+            checkFailureAndTriggerAI(criticalCase);
+
             saveDataToLocalStorage();
         }
         
@@ -892,7 +930,7 @@
                 </div>
             `;
         }
-
+        
         function generateDetailedReport(inputs, calcs) {
             const { M_eff, c_nom, d_y, d_prime, flexuralCalcs, topBars, bottomBars, As_prov, As_prime_prov, shearCalcsY, shearCalcsX, v_max_limit, torsionalCalcs, combined_Asv_s_req, Asv_s_prov, deflection_check, allowable_ratio, actual_ratio, crack_width_html, finalLinkDia, sv_prov, basic_ratio, tensionRebar, compressionRebar } = calcs;
             const v_res = Math.sqrt(shearCalcsY.v**2 + shearCalcsX.v**2);
@@ -904,7 +942,7 @@
 
             const shear_design_status_html = (sv_prov > 0) ? `<td class="final-rebar">T${finalLinkDia} @ ${sv_prov} mm c/c (${inputs.numLinkLegs} legs)</td><td>${Asv_s_prov.toFixed(3)}</td><td class="${Asv_s_prov >= combined_Asv_s_req ? 'check-ok' : 'check-fail'}">${Asv_s_prov >= combined_Asv_s_req ? 'OK' : 'FAIL'}</td>` : `<td class="check-fail" colspan="3">FAIL. Increase section/link size.</td>`;
             
-            let flex_util_ratio = (As_prov > 0) ? flexuralCalcs.As_req / As_prov : 0;
+            let flex_util_ratio = (As_prov > 0) ? flexuralCalcs.As_req / As_prov : (flexuralCalcs.As_req > 0 ? 999 : 0);
             let topBarSummary = topBars.layers.map(l => `${l.num}T${l.dia}`).join(' + ') || 'None';
             let bottomBarSummary = bottomBars.layers.map(l => `${l.num}T${l.dia}`).join(' + ') || 'None';
 
@@ -915,7 +953,7 @@
                 overviewHTML = `
                 <div id="overview-section">
                     <h2>${sectionCounter++}. Overview</h2>
-                    <textarea id="overview-text" placeholder="Enter project overview here..."></textarea>
+                    <p id="overview-content-p">${document.getElementById('ai-overview-text').value || 'This report details the structural design verification for a reinforced concrete beam section according to the Hong Kong Code of Practice for the Structural Use of Concrete 2013. The analysis covers Ultimate Limit State (ULS) checks for flexure, shear, and torsion, as well as Serviceability Limit State (SLS) checks for deflection and cracking under various load combinations.'}</p>
                 </div>`;
             }
             
@@ -1006,7 +1044,7 @@
                 <h2>${sectionCounter++}. Shear Design (ULS) <span class="citation">Cl. 6.1.2.5</span></h2>
                 <h3>Major Axis (Y-Y) Shear</h3>
                 <table><tr><td>Design Shear Stress, v<sub>y</sub></td><td class="formula">V<sub>y</sub> / (bd)</td><td>${shearCalcsY.v.toFixed(2)} N/mm²</td></tr>
-                <tr><td>Concrete Shear Capacity, v<sub>c</sub></td><td>Adjusted for N</td><td>${shearCalcsY.vc.toFixed(2)} N/mm² <span class="citation">Table 6.3</span></td></tr>
+                <tr><td>Concrete Shear Capacity, v<sub>c</sub></td><td>From Table 6.3</td><td>${shearCalcsY.vc.toFixed(2)} N/mm² <span class="citation">Table 6.3</span></td></tr>
                 <tr><td>Req. Shear Links, (A<sub>sv</sub>/s<sub>v</sub>)<sub>y</sub></td><td class="formula">(v<sub>y</sub> - v<sub>c</sub>)b / (0.87f<sub>yv</sub>)</td><td>${shearCalcsY.Asv_s_req.toFixed(3)}</td></tr>
                 </table>
                 <h3>Minor Axis (X-X) Shear (Simplified)</h3>
@@ -1035,81 +1073,200 @@
             </div>`;
             return html;
         }
+        
+        // --- AI Integration ---
+        async function callAI(prompt) {
+            const provider = document.getElementById('aiProvider').value;
+            const apiKey = document.getElementById('apiKey').value;
+            let apiUrl = document.getElementById('apiUrl').value;
+            let payload;
+            let headers = { 'Content-Type': 'application/json' };
 
-        window.onload = function() {
-            // Setup a single event listener for the entire document for better performance and handling of dynamic elements
-            document.body.addEventListener('click', (event) => {
-                const target = event.target;
+            if (!apiKey) {
+                return "Error: API Key is missing. Please enter it in the 'Advanced AI Settings' section.";
+            }
 
-                if (target.id === 'add-load-case-btn') {
-                    addLoadCaseRow();
-                    runBatchAnalysis();
-                } 
-                else if (target.id === 'paste-data-btn') {
-                    showPasteModal();
+            if (provider === 'gemini') {
+                apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                payload = {
+                    contents: [{ role: "user", parts: [{ text: prompt }] }]
+                };
+            } else { // Custom provider
+                if (!apiUrl) {
+                    return "Error: Custom API URL is missing. Please enter it in the 'Advanced AI Settings' section.";
                 }
-                else if (target.id === 'process-paste-btn') {
-                    processPastedData();
+                // NOTE: This is a placeholder structure for an OpenAI-like API.
+                // Users must adapt this for their specific custom API provider.
+                payload = {
+                    model: "custom-model-name", // Example: "gpt-4"
+                    messages: [{ role: "user", content: prompt }] 
+                };
+                headers['Authorization'] = `Bearer ${apiKey}`;
+            }
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                     const errorBody = await response.text();
+                     console.error("API Error Response:", errorBody);
+                    throw new Error(`API call failed with status: ${response.status}`);
                 }
-                else if (target.id === 'cancel-paste-btn') {
-                    hidePasteModal();
-                }
-                else if (target.id === 'add-top-layer-btn') {
-                    addLayer('top');
-                    runBatchAnalysis();
-                }
-                else if (target.id === 'add-bottom-layer-btn') {
-                    addLayer('bottom');
-                    runBatchAnalysis();
-                }
-                else if (target.classList.contains('remove-layer-btn')) {
-                    target.closest('tr').remove();
-                    runBatchAnalysis();
-                }
-                else if (target.id === 'calc-btn') {
-                    runBatchAnalysis();
-                }
-                else if (target.id === 'print-btn') {
-                    window.print();
-                }
-                else if (target.id === 'reset-btn') {
-                    if (confirm("Are you sure you want to reset all inputs to their default values? This will clear all your data.")) {
-                        localStorage.removeItem('rcBeamCalculatorData');
-                        window.location.reload();
+                const result = await response.json();
+                
+                // Handle response based on provider
+                if (provider === 'gemini') {
+                    if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                        return result.candidates[0].content.parts[0].text;
+                    }
+                } else { // Custom provider response handling
+                    // NOTE: This part needs to be adapted for the specific custom API's response structure.
+                    // This is an example for an OpenAI-like response.
+                    if (result.choices && result.choices.length > 0) {
+                        return result.choices[0].message.content;
                     }
                 }
+                return "AI could not generate a response. Check the console for the API response structure.";
+            } catch (error) {
+                console.error("Error calling AI API:", error);
+                return `Error communicating with AI: ${error.message}`;
+            }
+        }
+
+        async function getAIRecommendation() {
+            const recommendationOutput = document.getElementById('recommendation-output');
+            recommendationOutput.textContent = 'Asking the AI for suggestions...';
+
+            const { inputs, calcs, utilization } = lastCriticalCase;
+            let failureInfo = `The RC beam design for load case '${inputs.caseName}' has failed. `;
+            if (utilization.flex > 1.0) {
+                failureInfo += `Flexural check failed (UR=${utilization.flex.toFixed(2)}). Required tension steel area is ${calcs.flexuralCalcs.As_req.toFixed(0)} mm², but only ${calcs.As_prov.toFixed(0)} mm² was provided. `;
+            }
+            if (utilization.shear > 1.0) {
+                failureInfo += `Shear check failed (UR=${utilization.shear.toFixed(2)}). Design shear stress v=${calcs.shearCalcsY.v.toFixed(2)} N/mm² exceeds the maximum capacity v_max=${calcs.v_max_limit.toFixed(2)} N/mm². `;
+            }
+            if (!calcs.deflection_check) {
+                failureInfo += `Deflection check failed (UR=${(calcs.actual_ratio / calcs.allowable_ratio).toFixed(2)}). The actual span/depth ratio of ${calcs.actual_ratio.toFixed(1)} exceeds the allowable ratio of ${calcs.allowable_ratio.toFixed(1)}. `;
+            }
+            const prompt = `
+                As an expert structural engineer, the following RC beam design has failed according to HK CoP 2013.
+                Provide brief, straightforward, and numbered recommendations to resolve the failure.
+
+                Beam Dimensions: ${inputs.b}mm x ${inputs.h}mm
+                Concrete: fcu = ${inputs.fcu} MPa
+                Steel: fy = ${inputs.fy} MPa
+                
+                Failure Details: ${failureInfo}
+
+                Recommendations:
+            `;
+            const recommendation = await callAI(prompt);
+            recommendationOutput.textContent = recommendation;
+        }
+        
+        async function generateAIOverview() {
+            const overviewTextarea = document.getElementById('ai-overview-text');
+            overviewTextarea.value = 'Generating overview...';
+            const prompt = `
+                Generate a brief, professional project overview for a structural design report.
+                Project Title: ${document.getElementById('projectTitle').value}
+                Subtitle: ${document.getElementById('projectSubTitle').value}
+                The report is for a reinforced concrete beam design check according to the Hong Kong Code of Practice for Concrete 2013.
+                The check includes ULS for flexure, shear, torsion, and SLS for deflection and cracking.
+            `;
+            const overview = await callAI(prompt);
+            overviewTextarea.value = overview;
+            if (document.getElementById('overview-content-p')) {
+                document.getElementById('overview-content-p').textContent = overview;
+            }
+        }
+        
+        async function rephraseAIOverview() {
+            const overviewTextarea = document.getElementById('ai-overview-text');
+            const originalText = overviewTextarea.value;
+            if (!originalText.trim() || originalText === 'Generating overview...') return;
+            overviewTextarea.value = 'Rephrasing...';
+            const prompt = `Rephrase the following text to be more professional and suitable for a structural engineering report: "${originalText}"`;
+            const rephrased = await callAI(prompt);
+            overviewTextarea.value = rephrased;
+             if (document.getElementById('overview-content-p')) {
+                document.getElementById('overview-content-p').textContent = rephrased;
+            }
+        }
+
+        function checkFailureAndTriggerAI(criticalCase) {
+            const recommendationSection = document.getElementById('recommendation-section');
+            const recommendationOutput = document.getElementById('recommendation-output');
+            
+            const isFailure = criticalCase.utilization.overall > 1.0;
+            
+            if (isFailure) {
+                recommendationSection.style.display = 'block';
+                let failureSummary = `Critical load case '${criticalCase.inputs.caseName}' failed with an overall utilization ratio of ${criticalCase.utilization.overall.toFixed(2)}.`;
+                recommendationOutput.textContent = failureSummary;
+            } else {
+                recommendationSection.style.display = 'none';
+            }
+        }
+
+
+        // --- Event Listeners & Initialization ---
+
+        window.onload = function() {
+            document.body.addEventListener('click', (event) => {
+                const target = event.target;
+                if (target.id === 'add-load-case-btn') { addLoadCaseRow(); runBatchAnalysis(); } 
+                else if (target.id === 'paste-data-btn') { showPasteModal(); }
+                else if (target.id === 'process-paste-btn') { processPastedData(); }
+                else if (target.id === 'cancel-paste-btn') { hidePasteModal(); }
+                else if (target.id === 'add-top-layer-btn') { addLayer('top'); runBatchAnalysis(); }
+                else if (target.id === 'add-bottom-layer-btn') { addLayer('bottom'); runBatchAnalysis(); }
+                else if (target.classList.contains('remove-layer-btn')) { target.closest('tr').remove(); runBatchAnalysis(); }
+                else if (target.id === 'calc-btn') { runBatchAnalysis(); }
+                else if (target.id === 'print-btn') { window.print(); }
+                else if (target.id === 'reset-btn') { if (confirm("Are you sure you want to reset all inputs?")) { localStorage.removeItem('rcBeamCalculatorData'); window.location.reload(); } }
+                else if (target.id === 'generate-overview-btn') { generateAIOverview(); }
+                else if (target.id === 'rephrase-overview-btn') { rephraseAIOverview(); }
+                else if (target.id === 'ai-recommend-btn') { getAIRecommendation(); }
                 else if (target.closest('#load-case-summary tbody tr')) {
                     const row = target.closest('tr');
                     const caseIndex = parseInt(row.getAttribute('data-case-index'));
                     if (!isNaN(caseIndex) && allResults[caseIndex]) {
                         const newDetailedReport = generateDetailedReport(allResults[caseIndex].inputs, allResults[caseIndex].calcs);
                         const oldReport = document.getElementById('detailed-report-container');
-                        if (oldReport) {
-                            oldReport.outerHTML = newDetailedReport;
-                        }
-                        // Highlight the new critical row
+                        if (oldReport) oldReport.outerHTML = newDetailedReport;
                         document.querySelectorAll('#load-case-summary tbody tr').forEach(r => r.classList.remove('critical'));
                         row.classList.add('critical');
+                        lastCriticalCase = allResults[caseIndex];
+                        checkFailureAndTriggerAI(lastCriticalCase);
                     }
                 }
             });
 
-            // Add change/input listeners for automatic updates on the entire input panel
             const inputsPanel = document.querySelector('.inputs-panel');
             if (inputsPanel) {
-                inputsPanel.addEventListener('input', (event) => {
-                    if (event.target.matches('input')) {
-                         runBatchAnalysis();
-                    }
-                });
-                inputsPanel.addEventListener('change', (event) => {
-                    if (event.target.matches('select')) {
-                         runBatchAnalysis();
-                    }
+                inputsPanel.addEventListener('input', (event) => { if (event.target.matches('input, textarea')) { runBatchAnalysis(); } });
+                inputsPanel.addEventListener('change', (event) => { 
+                    if (event.target.matches('select, input[type=checkbox]')) { 
+                        if (event.target.id === 'aiProvider') {
+                            const apiUrlInput = document.getElementById('apiUrl');
+                            if (event.target.value === 'gemini') {
+                                apiUrlInput.value = ''; // Clear it, it will be constructed with the key later
+                                apiUrlInput.placeholder = 'Gemini API URL (auto-populated)';
+                            } else {
+                                apiUrlInput.value = '';
+                                apiUrlInput.placeholder = 'e.g., https://api.openai.com/v1/chat/completions';
+                            }
+                        }
+                        runBatchAnalysis(); 
+                    } 
                 });
             }
              
-             loadDataFromLocalStorage(); // Load saved data on page load
+             loadDataFromLocalStorage();
         };
 
         function saveDataToLocalStorage() {
@@ -1117,20 +1274,15 @@
                 reportDetails: {},
                 detailing: {},
                 rebar: { top: [], bottom: [] },
-                loadCases: []
+                loadCases: [],
+                aiSettings: {}
             };
-
-            // Save report details
-            document.querySelectorAll('#designerName, #checkedBy, #projectTitle, #projectSubTitle, #reportDate, #reportRevision, #includeOverview').forEach(el => {
+            document.querySelectorAll('#designerName, #checkedBy, #projectTitle, #projectSubTitle, #reportDate, #reportRevision, #includeOverview, #ai-overview-text').forEach(el => {
                 data.reportDetails[el.id] = el.type === 'checkbox' ? el.checked : el.value;
             });
-            
-            // Save detailing and material properties
             document.querySelectorAll('#fcu, #fy, #supportCondition, #span, #b, #h, #c_nom, #aggSize, #linkDia, #numLinkLegs, #linkSpacing, #restraintFactor, #tempDrop').forEach(el => {
                 data.detailing[el.id] = el.value;
             });
-
-            // Save rebar layers
             document.querySelectorAll('#top-layers-container tr').forEach(row => {
                 data.rebar.top.push({
                     num: row.querySelector('.num-bars').value,
@@ -1145,13 +1297,13 @@
                     spacing: row.querySelector('.clear-spacing') ? row.querySelector('.clear-spacing').value : 'N/A'
                 });
             });
-
-            // Save load cases
             document.querySelectorAll('#load-case-tbody tr').forEach(row => {
                 const inputs = row.querySelectorAll('input');
                 data.loadCases.push(Array.from(inputs).map(i => i.value));
             });
-
+            document.querySelectorAll('#aiProvider, #apiUrl, #apiKey').forEach(el => {
+                data.aiSettings[el.id] = el.value;
+            });
             localStorage.setItem('rcBeamCalculatorData', JSON.stringify(data));
         }
 
@@ -1159,8 +1311,6 @@
             const savedData = localStorage.getItem('rcBeamCalculatorData');
             if (savedData) {
                 const data = JSON.parse(savedData);
-
-                // Load report details
                 for (const id in data.reportDetails) {
                     const el = document.getElementById(id);
                     if (el) {
@@ -1168,14 +1318,16 @@
                         else el.value = data.reportDetails[id];
                     }
                 }
-
-                // Load detailing and material properties
                 for (const id in data.detailing) {
                     const el = document.getElementById(id);
                     if (el) el.value = data.detailing[id];
                 }
-
-                // Load rebar layers
+                if (data.aiSettings) {
+                    for (const id in data.aiSettings) {
+                        const el = document.getElementById(id);
+                        if (el) el.value = data.aiSettings[id];
+                    }
+                }
                 const topContainer = document.getElementById('top-layers-container');
                 topContainer.innerHTML = '';
                 data.rebar.top.forEach(layer => addLayer('top'));
@@ -1184,7 +1336,6 @@
                     row.querySelector('.bar-dia').value = data.rebar.top[i].dia;
                     if(row.querySelector('.clear-spacing')) row.querySelector('.clear-spacing').value = data.rebar.top[i].spacing;
                 });
-
                 const bottomContainer = document.getElementById('bottom-layers-container');
                 bottomContainer.innerHTML = '';
                 data.rebar.bottom.forEach(layer => addLayer('bottom'));
@@ -1193,8 +1344,6 @@
                     row.querySelector('.bar-dia').value = data.rebar.bottom[i].dia;
                     if(row.querySelector('.clear-spacing')) row.querySelector('.clear-spacing').value = data.rebar.bottom[i].spacing;
                 });
-
-                // Load load cases
                 const loadCaseContainer = document.getElementById('load-case-tbody');
                 loadCaseContainer.innerHTML = '';
                 data.loadCases.forEach(lc => addLoadCaseRow(lc));
